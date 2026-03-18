@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartItem, Product, Address, PaymentMethod, ShippingMethod } from '@/lib/mock-data';
-import { getProductById } from '@/lib/mock-data';
+import type { CartItem, Product, Address, PaymentMethod, ShippingMethod } from '@/lib/api-service';
 import { api } from '@/lib/api';
 
 interface CartState {
@@ -115,19 +114,13 @@ export const useCartStore = create<CartState>()(
       setNote: (note) => set({ note }),
 
       getCartProducts: () => {
-        return get().items.map(item => {
-          const product = getProductById(item.productId);
-          return { ...item, product: product! };
-        }).filter(item => item.product);
+        // Returns items with product stub based on stored data
+        return get().items.filter(i => i.product).map(item => ({ ...item, product: item.product! }));
       },
 
       getSubtotal: () => {
         return get().items.reduce((total, item) => {
-          const product = getProductById(item.productId);
-          if (!product) return total;
-          const price = product.isFlashSale && product.flashSalePrice
-            ? product.flashSalePrice
-            : product.price;
+          const price = item.price || 0;
           return total + price * item.quantity;
         }, 0);
       },

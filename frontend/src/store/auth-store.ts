@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, Address } from '@/lib/mock-data';
-import { mockUsers } from '@/lib/mock-data';
 import { api, setAuthToken, getAuthToken } from '@/lib/api';
+import type { User, Address } from '@/lib/api-service';
 
 interface AuthState {
   user: User | null;
@@ -34,13 +33,7 @@ export const useAuthStore = create<AuthState>()(
           setAuthToken(data.token);
           set({ user: data.user, isAuthenticated: true, token: data.token });
           return true;
-        } catch (_error) {
-          // Fallback to mock mode when backend is unavailable
-          const user = mockUsers.find(u => u.email === email);
-          if (user && password) {
-            set({ user, isAuthenticated: true });
-            return true;
-          }
+        } catch {
           return false;
         }
       },
@@ -93,7 +86,7 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get();
         if (user) {
           const newAddress: Address = { ...address, id: `addr-${Date.now()}` };
-          set({ user: { ...user, addresses: [...user.addresses, newAddress] } });
+          set({ user: { ...user, addresses: [...(user.addresses ?? []), newAddress] } });
           api.post('/users/addresses', address).catch(() => {
             // Keep local optimistic update.
           });
@@ -106,7 +99,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: {
               ...user,
-              addresses: user.addresses.map(a => a.id === id ? { ...a, ...address } : a),
+              addresses: (user.addresses ?? []).map(a => a.id === id ? { ...a, ...address } : a),
             },
           });
         }
@@ -115,7 +108,7 @@ export const useAuthStore = create<AuthState>()(
       deleteAddress: (id) => {
         const { user } = get();
         if (user) {
-          set({ user: { ...user, addresses: user.addresses.filter(a => a.id !== id) } });
+          set({ user: { ...user, addresses: (user.addresses ?? []).filter(a => a.id !== id) } });
           api.delete(`/users/addresses/${id}`).catch(() => {
             // Keep local optimistic update.
           });
@@ -128,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: {
               ...user,
-              addresses: user.addresses.map(a => ({ ...a, isDefault: a.id === id })),
+              addresses: (user.addresses ?? []).map(a => ({ ...a, isDefault: a.id === id })),
             },
           });
           api.patch(`/users/addresses/${id}/default`).catch(() => {

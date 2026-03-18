@@ -1,6 +1,6 @@
 const express = require('express');
 const { getPool, sql } = require('../libs/db');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+const { authMiddleware, adminMiddleware } = require('../middlewares/authMiddleware');
 const { safeJsonParse } = require('../utils/mapRows');
 
 const router = express.Router();
@@ -29,7 +29,34 @@ async function buildOrders(pool, userId) {
       ORDER BY ot.[date]
     `);
 
-  const itemsByOrder = itemResult.recordset.reduce((acc, row) => {
+  return buildOrdersFromRows(ordersResult.recordset, itemResult.recordset, timelineResult.recordset);
+}
+
+async function buildAllOrders(pool, { status, q } = {}) {
+  const request = pool.request();
+  const conditions = [];
+
+  if (status && status !== 'all') {
+    request.input('statusFilter', sql.NVarChar, status);
+    conditions.push("[status] = @statusFilter");
+  }
+  if (q) {
+    request.input('q', sql.NVarChar, `%${q}%`);
+    conditions.push("(id LIKE @q OR shippingAddress LIKE @q)");
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const ordersResult = await request.query(`SELECT * FROM dbo.orders ${where} ORDER BY createdAt DESC`);
+  if (ordersResult.recordset.length === 0) return [];
+
+  const allItems = await pool.request().query('SELECT * FROM dbo.order_items');
+  const allTimelines = await pool.request().query('SELECT * FROM dbo.order_timeline ORDER BY [date]');
+
+  return buildOrdersFromRows(ordersResult.recordset, allItems.recordset, allTimelines.recordset);
+}
+
+function buildOrdersFromRows(orders, items, timelines) {
+  const itemsByOrder = items.reduce((acc, row) => {
     acc[row.orderId] = acc[row.orderId] || [];
     acc[row.orderId].push({
       productId: row.productId,
@@ -42,17 +69,13 @@ async function buildOrders(pool, userId) {
     return acc;
   }, {});
 
-  const timelineByOrder = timelineResult.recordset.reduce((acc, row) => {
+  const timelineByOrder = timelines.reduce((acc, row) => {
     acc[row.orderId] = acc[row.orderId] || [];
-    acc[row.orderId].push({
-      status: row.status,
-      date: row.date,
-      note: row.note,
-    });
+    acc[row.orderId].push({ status: row.status, date: row.date, note: row.note });
     return acc;
   }, {});
 
-  return ordersResult.recordset.map((row) => ({
+  return orders.map((row) => ({
     ...row,
     subtotal: Number(row.subtotal),
     shippingFee: Number(row.shippingFee),
@@ -64,6 +87,8 @@ async function buildOrders(pool, userId) {
     timeline: timelineByOrder[row.id] || [],
   }));
 }
+
+// ==================== CUSTOMER ====================
 
 router.get('/my-orders', authMiddleware, async (req, res, next) => {
   try {
@@ -78,16 +103,8 @@ router.get('/my-orders', authMiddleware, async (req, res, next) => {
 router.post('/', authMiddleware, async (req, res, next) => {
   try {
     const {
-      items,
-      subtotal,
-      shippingFee,
-      discount,
-      total,
-      paymentMethod,
-      shippingMethod,
-      shippingAddress,
-      voucherCode,
-      note,
+      items, subtotal, shippingFee, discount, total,
+      paymentMethod, shippingMethod, shippingAddress, voucherCode, note,
     } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -136,10 +153,162 @@ router.post('/', authMiddleware, async (req, res, next) => {
 
     await pool.request()
       .input('orderId', sql.NVarChar, orderId)
-      .input('status', sql.NVarChar, 'pending')
-      .query('INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, @status, SYSUTCDATETIME(), NULL)');
+      .query("INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, 'pending', SYSUTCDATETIME(), NULL)");
+
+    // Mark voucher used
+    if (voucherCode) {
+      await pool.request()
+        .input('code', sql.NVarChar, voucherCode.toUpperCase())
+        .query('UPDATE dbo.vouchers SET usedCount = usedCount + 1 WHERE code = @code');
+    }
 
     return res.status(201).json({ id: orderId, message: 'Order created successfully' });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Customer cancel pending order
+router.post('/:id/cancel', authMiddleware, async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    const result = await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('userId', sql.NVarChar, req.user.userId)
+      .query("SELECT TOP 1 id, [status] FROM dbo.orders WHERE id = @id AND userId = @userId");
+
+    const order = result.recordset[0];
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (order.status !== 'pending') {
+      return res.status(400).json({ message: 'Chỉ có thể hủy đơn hàng đang chờ xác nhận' });
+    }
+
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .query("UPDATE dbo.orders SET [status] = 'cancelled' WHERE id = @id");
+
+    await pool.request()
+      .input('orderId', sql.NVarChar, req.params.id)
+      .query("INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, 'cancelled', SYSUTCDATETIME(), N'Khách hàng hủy đơn')");
+
+    return res.json({ message: 'Order cancelled' });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Customer submit return request
+router.post('/:id/return-request', authMiddleware, async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ message: 'Reason is required' });
+
+    const pool = await getPool();
+    const result = await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('userId', sql.NVarChar, req.user.userId)
+      .query("SELECT TOP 1 id, [status], returnRequest FROM dbo.orders WHERE id = @id AND userId = @userId");
+
+    const order = result.recordset[0];
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (order.status !== 'delivered') {
+      return res.status(400).json({ message: 'Chỉ có thể yêu cầu hoàn hàng sau khi đã giao' });
+    }
+    if (order.returnRequest) {
+      return res.status(409).json({ message: 'Đã tồn tại yêu cầu hoàn hàng' });
+    }
+
+    const returnRequest = { reason, status: 'pending', createdAt: new Date().toISOString() };
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('returnRequest', sql.NVarChar(sql.MAX), JSON.stringify(returnRequest))
+      .query("UPDATE dbo.orders SET returnRequest = @returnRequest WHERE id = @id");
+
+    return res.status(201).json({ message: 'Return request submitted', returnRequest });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ==================== ADMIN ====================
+
+// Get ALL orders (admin)
+router.get('/', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { status, q } = req.query;
+    const pool = await getPool();
+    const orders = await buildAllOrders(pool, { status, q });
+    return res.json(orders);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Update order status (admin)
+router.patch('/:id/status', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { status, note } = req.body;
+    const validStatuses = ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'cancelled', 'returned'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const pool = await getPool();
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('status', sql.NVarChar, status)
+      .query("UPDATE dbo.orders SET [status] = @status WHERE id = @id");
+
+    await pool.request()
+      .input('orderId', sql.NVarChar, req.params.id)
+      .input('status', sql.NVarChar, status)
+      .input('note', sql.NVarChar, note || null)
+      .query("INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, @status, SYSUTCDATETIME(), @note)");
+
+    return res.json({ message: 'Order status updated' });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Approve/reject return request (admin)
+router.patch('/:id/return', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { action, note } = req.body; // action: 'approved' | 'rejected'
+    if (!['approved', 'rejected'].includes(action)) {
+      return res.status(400).json({ message: 'Action must be approved or rejected' });
+    }
+
+    const pool = await getPool();
+    const result = await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .query('SELECT TOP 1 returnRequest FROM dbo.orders WHERE id = @id');
+
+    const order = result.recordset[0];
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    const returnRequest = safeJsonParse(order.returnRequest, null);
+    if (!returnRequest) return res.status(400).json({ message: 'No return request found' });
+
+    returnRequest.status = action;
+    returnRequest.resolvedAt = new Date().toISOString();
+    if (note) returnRequest.note = note;
+
+    const newOrderStatus = action === 'approved' ? 'returned' : 'delivered';
+
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('returnRequest', sql.NVarChar(sql.MAX), JSON.stringify(returnRequest))
+      .input('status', sql.NVarChar, newOrderStatus)
+      .query("UPDATE dbo.orders SET returnRequest = @returnRequest, [status] = @status WHERE id = @id");
+
+    await pool.request()
+      .input('orderId', sql.NVarChar, req.params.id)
+      .input('status', sql.NVarChar, newOrderStatus)
+      .input('note', sql.NVarChar, note || (action === 'approved' ? 'Đã duyệt hoàn hàng' : 'Từ chối hoàn hàng'))
+      .query("INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, @status, SYSUTCDATETIME(), @note)");
+
+    return res.json({ message: `Return request ${action}` });
   } catch (error) {
     return next(error);
   }

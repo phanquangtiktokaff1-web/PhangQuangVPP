@@ -11,6 +11,8 @@ const voucherRoute = require('./routes/voucherRoute');
 const dashboardRoute = require('./routes/dashboardRoute');
 const userRoute = require('./routes/userRoute');
 const chatRoute = require('./routes/chatRoute');
+const wishlistRoute = require('./routes/wishlistRoute');
+
 const { notFound, errorHandler } = require('./middlewares/errorMiddleware');
 
 const app = express();
@@ -29,6 +31,8 @@ app.use('/api/vouchers', voucherRoute);
 app.use('/api/dashboard', dashboardRoute);
 app.use('/api/users', userRoute);
 app.use('/api/chat', chatRoute);
+app.use('/api/wishlist', wishlistRoute);
+
 
 app.use(notFound);
 app.use(errorHandler);

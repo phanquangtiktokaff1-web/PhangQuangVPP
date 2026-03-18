@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { ArrowRight, Building2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -5,17 +6,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { IconRenderer } from '@/components/ui/icon-renderer';
 import { ProductCard } from '@/components/product/ProductCard';
-import { categories, products } from '@/lib/mock-data';
+import { catalogApi, type Product, type Category } from '@/lib/api-service';
 
 export function HomePage() {
-  const bestSellers = [...products].sort((a, b) => b.sold - a.sold).slice(0, 8);
-  const newProducts = [...products]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 4);
-  const discountedProducts = [...products]
-    .filter(p => p.discount > 0)
-    .sort((a, b) => b.discount - a.discount)
-    .slice(0, 4);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [bestSellers, setBestSellers] = useState<Product[]>([]);
+  const [discountedProducts, setDiscountedProducts] = useState<Product[]>([]);
+  const [newProducts, setNewProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    catalogApi.getCategories().then(setCategories).catch(() => {});
+    catalogApi.getProducts({ sort: 'popular', limit: 8 }).then(setBestSellers).catch(() => {});
+    catalogApi.getProducts({ sort: 'discount', limit: 4 }).then(setDiscountedProducts).catch(() => {});
+    catalogApi.getProducts({ sort: 'newest', limit: 4 }).then(setNewProducts).catch(() => {});
+  }, []);
+
 
   return (
     <div>
@@ -71,7 +76,7 @@ export function HomePage() {
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {categories.map(cat => (
-            <Link key={cat.id} to={`/category/${cat.slug}`}>
+            <Link key={cat.id} to={`/category/${cat.slug ?? cat.id}`}>
               <Card className="hover:shadow-md transition-all hover:-translate-y-0.5 text-center group cursor-pointer">
                 <CardContent className="p-3">
                   <div className="mb-2 flex justify-center text-primary group-hover:scale-110 transition-transform">

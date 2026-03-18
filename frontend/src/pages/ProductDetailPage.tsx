@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { ShoppingCart, Heart, Star, Minus, Plus, Sparkles, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { ProductCard } from '@/components/product/ProductCard';
-import { products, getBrandById, getCategoryById, formatPrice } from '@/lib/mock-data';
+import { catalogApi, formatPrice, type Product } from '@/lib/api-service';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useAuthStore } from '@/store/auth-store';
@@ -21,7 +21,9 @@ import { toast } from 'sonner';
 export function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const product = products.find(p => p.slug === slug);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState('');
@@ -34,6 +36,23 @@ export function ProductDetailPage() {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
   const { isAuthenticated } = useAuthStore();
 
+  useEffect(() => {
+    if (!slug) return;
+    setLoading(true);
+    catalogApi.getProduct(slug)
+      .then(p => {
+        setProduct(p);
+        // Fetch related products in same category
+        return catalogApi.getProducts({ categoryId: p.categoryId, limit: 4 });
+      })
+      .then(related => setRelatedProducts(related.filter(r => r.id !== product?.id).slice(0, 4)))
+      .catch(() => setProduct(null))
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  if (loading) return <div className="container mx-auto px-4 py-16 text-center text-muted-foreground">Đang tải...</div>;
+
   if (!product) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -43,11 +62,8 @@ export function ProductDetailPage() {
     );
   }
 
-  const brand = getBrandById(product.brandId);
-  const category = getCategoryById(product.categoryId);
   const inWishlist = isInWishlist(product.id);
   const currentPrice = product.price;
-  const relatedProducts = products.filter(p => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
     const customization = customType && customText ? { type: customType, text: customText } : undefined;
@@ -74,12 +90,7 @@ export function ProductDetailPage() {
       <nav className="text-sm text-muted-foreground mb-6 flex items-center gap-2">
         <Link to="/" className="hover:text-primary">Trang chủ</Link>
         <span>/</span>
-        {category && (
-          <>
-            <Link to={`/category/${category.slug}`} className="hover:text-primary">{category.name}</Link>
-            <span>/</span>
-          </>
-        )}
+        <span>/</span>
         <span className="text-foreground">{product.name}</span>
       </nav>
 
@@ -112,7 +123,7 @@ export function ProductDetailPage() {
         {/* Details */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            {brand && <Badge variant="outline">{brand.name}</Badge>}
+            {product.brandId && <Badge variant="outline">{product.brandId}</Badge>}
           </div>
 
           <h1 className="text-2xl font-bold mb-3">{product.name}</h1>

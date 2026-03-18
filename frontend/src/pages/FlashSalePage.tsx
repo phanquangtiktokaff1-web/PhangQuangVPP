@@ -1,12 +1,16 @@
+import { useState, useEffect } from 'react';
 import { Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ProductCard } from '@/components/product/ProductCard';
 import { CountdownTimer } from '@/components/product/CountdownTimer';
-import { getFlashSaleProducts } from '@/lib/mock-data';
+import { catalogApi, type Product } from '@/lib/api-service';
 
 export function FlashSalePage() {
-  const flashSaleProducts = getFlashSaleProducts();
-  const nextEndTime = flashSaleProducts[0]?.flashSaleEnd || new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+  const [flashSaleProducts, setFlashSaleProducts] = useState<Product[]>([]);
+  const [fallbackEnd] = useState(() => new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString());
+  useEffect(() => { catalogApi.getProducts({ isFlashSale: true }).then(setFlashSaleProducts).catch(() => {}); }, []);
+  const nextEndTime = flashSaleProducts[0]?.flashSaleEnd ?? fallbackEnd;
+
 
   return (
     <div>

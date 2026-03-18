@@ -1,9 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { getPool, sql } = require('../libs/db');
-const { authMiddleware } = require('../middlewares/authMiddleware');
+const { authMiddleware, adminMiddleware } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
+
+// ==================== CUSTOMER: PROFILE ====================
 
 router.put('/me', authMiddleware, async (req, res, next) => {
   try {
@@ -43,14 +45,10 @@ router.post('/change-password', authMiddleware, async (req, res, next) => {
       .query('SELECT TOP 1 passwordHash FROM dbo.users WHERE id = @id');
 
     const user = result.recordset[0];
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
     const valid = await bcrypt.compare(oldPassword, user.passwordHash);
-    if (!valid) {
-      return res.status(400).json({ message: 'Old password is incorrect' });
-    }
+    if (!valid) return res.status(400).json({ message: 'Old password is incorrect' });
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await pool.request()
@@ -63,6 +61,8 @@ router.post('/change-password', authMiddleware, async (req, res, next) => {
     return next(error);
   }
 });
+
+// ==================== CUSTOMER: ADDRESSES ====================
 
 router.post('/addresses', authMiddleware, async (req, res, next) => {
   try {
@@ -105,7 +105,6 @@ router.delete('/addresses/:id', authMiddleware, async (req, res, next) => {
       .input('id', sql.NVarChar, req.params.id)
       .input('userId', sql.NVarChar, req.user.userId)
       .query('DELETE FROM dbo.addresses WHERE id = @id AND userId = @userId');
-
     return res.json({ message: 'Address deleted' });
   } catch (error) {
     return next(error);
@@ -125,6 +124,75 @@ router.patch('/addresses/:id/default', authMiddleware, async (req, res, next) =>
       .query('UPDATE dbo.addresses SET isDefault = 1 WHERE id = @id AND userId = @userId');
 
     return res.json({ message: 'Default address updated' });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// ==================== ADMIN: USER MANAGEMENT ====================
+
+router.get('/', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { q, role } = req.query;
+    const pool = await getPool();
+    const request = pool.request();
+    const conditions = [];
+
+    if (role && role !== 'all') {
+      request.input('role', sql.NVarChar, role);
+      conditions.push('[role] = @role');
+    }
+    if (q) {
+      request.input('q', sql.NVarChar, `%${q}%`);
+      conditions.push('(name LIKE @q OR email LIKE @q)');
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const result = await request.query(`
+      SELECT id, email, name, phone, avatar, [role], [status], createdAt
+      FROM dbo.users ${where}
+      ORDER BY createdAt DESC
+    `);
+
+    return res.json(result.recordset);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/:id/status', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!['active', 'locked'].includes(status)) {
+      return res.status(400).json({ message: 'Status must be active or locked' });
+    }
+
+    const pool = await getPool();
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('status', sql.NVarChar, status)
+      .query('UPDATE dbo.users SET [status] = @status WHERE id = @id');
+
+    return res.json({ message: `User ${status === 'locked' ? 'locked' : 'unlocked'}` });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.patch('/:id/role', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { role } = req.body;
+    if (!['admin', 'staff', 'customer'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    const pool = await getPool();
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('role', sql.NVarChar, role)
+      .query('UPDATE dbo.users SET [role] = @role WHERE id = @id');
+
+    return res.json({ message: 'User role updated' });
   } catch (error) {
     return next(error);
   }

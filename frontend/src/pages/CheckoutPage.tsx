@@ -11,8 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useCartStore } from '@/store/cart-store';
 import { useAuthStore } from '@/store/auth-store';
-import { formatPrice, getProductById } from '@/lib/mock-data';
-import type { PaymentMethod, ShippingMethod } from '@/lib/mock-data';
+import { formatPrice } from '@/lib/api-service';
+import type { PaymentMethod, ShippingMethod } from '@/lib/api-service';
 import { toast } from 'sonner';
 
 export function CheckoutPage() {
@@ -27,18 +27,16 @@ export function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId] = useState(() => `ORD-${Date.now().toString().slice(-6)}`);
 
-  // Address form state
-  const [addrName, setAddrName] = useState(user?.addresses[0]?.name || user?.name || '');
-  const [addrPhone, setAddrPhone] = useState(user?.addresses[0]?.phone || user?.phone || '');
-  const [addrStreet, setAddrStreet] = useState(user?.addresses[0]?.street || '');
-  const [addrWard, setAddrWard] = useState(user?.addresses[0]?.ward || '');
-  const [addrDistrict, setAddrDistrict] = useState(user?.addresses[0]?.district || '');
-  const [addrCity, setAddrCity] = useState(user?.addresses[0]?.city || '');
+  // Address defaults from user profile
+  const defaultAddr = user?.addresses?.[0];
+  const [addrName, setAddrName] = useState(defaultAddr?.name || user?.name || '');
+  const [addrPhone, setAddrPhone] = useState(defaultAddr?.phone || user?.phone || '');
+  const [addrStreet, setAddrStreet] = useState(defaultAddr?.street || '');
+  const [addrWard, setAddrWard] = useState(defaultAddr?.ward || '');
+  const [addrDistrict, setAddrDistrict] = useState(defaultAddr?.district || '');
+  const [addrCity, setAddrCity] = useState(defaultAddr?.city || '');
 
-  const cartProducts = items.map(item => ({
-    ...item,
-    product: getProductById(item.productId)!,
-  })).filter(item => item.product);
+  const cartProducts = items.filter(item => item.product);
 
   if (items.length === 0 && !orderPlaced) {
     navigate('/cart');
@@ -85,7 +83,7 @@ export function CheckoutPage() {
             </CardHeader>
             <CardContent>
               {/* Saved addresses - prominent card selection */}
-              {user && user.addresses.length > 0 && (
+              {user && (user.addresses ?? []).length > 0 && (
                 <div className="mb-5">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-medium text-foreground">Chọn địa chỉ đã lưu</p>
@@ -94,7 +92,7 @@ export function CheckoutPage() {
                     </Link>
                   </div>
                   <div className="space-y-2">
-                    {user.addresses.map(addr => (
+                    {(user.addresses ?? []).map(addr => (
                       <label
                         key={addr.id}
                         className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors ${addrStreet === addr.street ? 'border-primary bg-primary/5' : ''}`}
@@ -102,8 +100,8 @@ export function CheckoutPage() {
                           setAddrName(addr.name);
                           setAddrPhone(addr.phone);
                           setAddrStreet(addr.street);
-                          setAddrWard(addr.ward);
-                          setAddrDistrict(addr.district);
+                          setAddrWard(addr.ward ?? '');
+                          setAddrDistrict(addr.district ?? '');
                           setAddrCity(addr.city);
                         }}
                       >
@@ -250,13 +248,13 @@ export function CheckoutPage() {
             <CardContent className="space-y-4">
               {/* Products */}
               <div className="space-y-3 max-h-60 overflow-y-auto">
-                {cartProducts.map(({ productId, quantity, product }) => {
-                  const price = product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price;
+                {cartProducts.filter(i => i.product).map(({ productId, quantity, product }) => {
+                  const price = product!.price;
                   return (
                     <div key={productId} className="flex gap-3">
-                      <img src={product.images[0]?.url} alt={product.name} className="w-12 h-12 object-cover rounded" />
+                      <img src={product!.images[0]?.url} alt={product!.name} className="w-12 h-12 object-cover rounded" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm truncate">{product.name}</div>
+                        <div className="text-sm truncate">{product!.name}</div>
                         <div className="text-xs text-muted-foreground">x{quantity}</div>
                       </div>
                       <div className="text-sm font-medium">{formatPrice(price * quantity)}</div>

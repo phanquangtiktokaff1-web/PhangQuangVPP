@@ -164,12 +164,49 @@ BEGIN
     senderId NVARCHAR(50) NOT NULL,
     senderName NVARCHAR(255) NOT NULL,
     senderRole NVARCHAR(20) NOT NULL,
+    targetUserId NVARCHAR(50) NULL,
     message NVARCHAR(MAX) NOT NULL,
     [timestamp] DATETIME2 NOT NULL,
     isRead BIT NOT NULL DEFAULT 0
   );
+END
+ELSE IF COL_LENGTH('dbo.chat_messages', 'targetUserId') IS NULL
+BEGIN
+  ALTER TABLE dbo.chat_messages ADD targetUserId NVARCHAR(50) NULL;
+END;
+
+IF OBJECT_ID('dbo.reviews', 'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.reviews (
+    id NVARCHAR(50) PRIMARY KEY,
+    productId NVARCHAR(50) NOT NULL,
+    userId NVARCHAR(50) NOT NULL,
+    userName NVARCHAR(255) NOT NULL,
+    userAvatar NVARCHAR(500) NULL,
+    rating INT NOT NULL,
+    comment NVARCHAR(MAX) NULL,
+    helpful INT NOT NULL DEFAULT 0,
+    isVerifiedPurchase BIT NOT NULL DEFAULT 0,
+    createdAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    FOREIGN KEY (productId) REFERENCES dbo.products(id),
+    FOREIGN KEY (userId) REFERENCES dbo.users(id)
+  );
+END;
+
+IF OBJECT_ID('dbo.wishlist', 'U') IS NULL
+BEGIN
+  CREATE TABLE dbo.wishlist (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    userId NVARCHAR(50) NOT NULL,
+    productId NVARCHAR(50) NOT NULL,
+    addedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+    FOREIGN KEY (userId) REFERENCES dbo.users(id),
+    FOREIGN KEY (productId) REFERENCES dbo.products(id),
+    UNIQUE (userId, productId)
+  );
 END;
 `;
+
 
 async function initDatabase() {
   const pool = await getPool();

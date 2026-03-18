@@ -1,10 +1,9 @@
 import { Link } from 'react-router';
-import { Heart, ShoppingCart, Star, BarChart2, Sparkles } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import type { Product } from '@/lib/mock-data';
-import { formatPrice } from '@/lib/mock-data';
+import { type Product, formatPrice } from '@/lib/api-service';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { toast } from 'sonner';
@@ -14,12 +13,12 @@ interface ProductCardProps {
   showCompare?: boolean;
 }
 
-export function ProductCard({ product, showCompare = true }: ProductCardProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function ProductCard({ product, showCompare: _sc = true }: ProductCardProps) {
   const addItem = useCartStore(s => s.addItem);
-  const { addToWishlist, removeFromWishlist, isInWishlist, addToCompare, isInCompare } = useWishlistStore();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
 
   const inWishlist = isInWishlist(product.id);
-  const inCompare = isInCompare(product.id);
   const currentPrice = product.price;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -36,21 +35,6 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
     } else {
       addToWishlist(product.id);
       toast.success('Đã thêm vào yêu thích!');
-    }
-  };
-
-  const handleToggleCompare = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (inCompare) {
-      useWishlistStore.getState().removeFromCompare(product.id);
-      toast.info('Đã xóa khỏi so sánh');
-    } else {
-      const success = addToCompare(product.id);
-      if (success) {
-        toast.success('Đã thêm vào so sánh!');
-      } else {
-        toast.error('Chỉ có thể so sánh tối đa 3 sản phẩm');
-      }
     }
   };
 
@@ -84,16 +68,6 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
             >
               <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
             </Button>
-            {showCompare && (
-              <Button
-                size="icon"
-                variant={inCompare ? "default" : "secondary"}
-                className="h-8 w-8"
-                onClick={handleToggleCompare}
-              >
-                <BarChart2 className="h-4 w-4" />
-              </Button>
-            )}
           </div>
 
           {/* Out of stock overlay */}

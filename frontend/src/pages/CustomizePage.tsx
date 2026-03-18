@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { getCustomizableProducts, formatPrice } from '@/lib/mock-data';
+import { catalogApi, formatPrice, type Product } from '@/lib/api-service';
 import { useCartStore } from '@/store/cart-store';
 import { toast } from 'sonner';
 
 export function CustomizePage() {
-  const customizableProducts = getCustomizableProducts();
+  const [customizableProducts, setCustomizableProducts] = useState<Product[]>([]);
+  useEffect(() => { catalogApi.getProducts({ isCustomizable: true }).then(setCustomizableProducts).catch(() => {}); }, []);
+
   const [selectedProduct, setSelectedProduct] = useState('');
   const [customType, setCustomType] = useState('');
   const [customText, setCustomText] = useState('');

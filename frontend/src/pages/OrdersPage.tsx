@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { Package, Eye, RotateCcw, CheckCircle, Clock, Truck, XCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { mockOrders, formatPrice } from '@/lib/mock-data';
-import type { OrderStatus } from '@/lib/mock-data';
+import { orderApi, formatPrice, type Order, type OrderStatus } from '@/lib/api-service';
 import { toast } from 'sonner';
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -32,20 +31,24 @@ const paymentMethodLabels: Record<string, string> = {
 };
 
 export function OrdersPage() {
+  const [orders, setOrders] = useState<Order[]>([]);
   const [selectedTab, setSelectedTab] = useState('all');
   const [returnReason, setReturnReason] = useState('');
 
-  const filteredOrders = selectedTab === 'all'
-    ? mockOrders
-    : mockOrders.filter(o => o.status === selectedTab);
+  useEffect(() => {
+    orderApi.getMyOrders().then(setOrders).catch(() => toast.error('Không tải được đơn hàng'));
+  }, []);
 
-  const handleReturn = () => {
-    if (!returnReason.trim()) {
-      toast.error('Vui lòng nhập lý do hoàn hàng');
-      return;
-    }
-    toast.success('Yêu cầu hoàn hàng đã được gửi!');
-    setReturnReason('');
+  const filteredOrders = selectedTab === 'all' ? orders : orders.filter(o => o.status === selectedTab);
+
+  const handleReturn = async (id: string) => {
+    if (!returnReason.trim()) { toast.error('Vui lòng nhập lý do hoàn hàng'); return; }
+    try {
+      await orderApi.returnRequest(id, returnReason);
+      toast.success('Yêu cầu hoàn hàng đã được gửi!');
+      setReturnReason('');
+      setOrders(prev => prev.map(o => o.id === id ? { ...o, returnRequest: { reason: returnReason, status: 'pending', createdAt: new Date().toISOString() } } : o));
+    } catch { toast.error('Lỗi gửi yêu cầu hoàn hàng'); }
   };
 
   return (
@@ -164,7 +167,7 @@ export function OrdersPage() {
                                       onChange={(e) => setReturnReason(e.target.value)}
                                     />
                                   </div>
-                                  <Button onClick={handleReturn} className="w-full">
+                                   <Button onClick={() => handleReturn(order.id)} className="w-full">
                                     Gửi yêu cầu
                                   </Button>
                                 </div>

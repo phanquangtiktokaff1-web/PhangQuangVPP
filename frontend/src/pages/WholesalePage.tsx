@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Building2, Calculator, Send, CheckCircle, BadgePercent, Truck, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { products, formatPrice } from '@/lib/mock-data';
+import { catalogApi, formatPrice, type Product } from '@/lib/api-service';
 import { toast } from 'sonner';
 
 export function WholesalePage() {
-  const wholesaleProducts = products.filter(p => p.wholesalePrice && p.wholesalePrice.length > 0);
+  const [wholesaleProducts, setWholesaleProducts] = useState<Product[]>([]);
+  useEffect(() => { catalogApi.getProducts({ hasWholesale: true }).then(setWholesaleProducts).catch(() => {}); }, []);
+
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(50);
   const [companyName, setCompanyName] = useState('');

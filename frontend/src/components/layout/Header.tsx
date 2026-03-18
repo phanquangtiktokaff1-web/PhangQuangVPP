@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ShoppingCart, Heart, User, Search, Menu, ChevronDown, LogOut, Package, Settings, Building2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,23 +10,27 @@ import { IconRenderer } from '@/components/ui/icon-renderer';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
-import { categories, getSearchSuggestions } from '@/lib/mock-data';
+import { catalogApi, type Category } from '@/lib/api-service';
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const navigate = useNavigate();
 
   const { user, isAuthenticated, logout } = useAuthStore();
   const itemCount = useCartStore(s => s.getItemCount());
-  const wishlistCount = useWishlistStore(s => s.items.length);
+  const wishlistCount = useWishlistStore(s => s.productIds.length);
+
+  useEffect(() => { catalogApi.getCategories().then(setCategories).catch(() => {}); }, []);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    if (value.length > 0) {
-      setSuggestions(getSearchSuggestions(value));
-      setShowSuggestions(true);
+    if (value.length > 1) {
+      catalogApi.getProducts({ q: value, limit: 5 })
+        .then(prods => { setSuggestions(prods.map(p => p.name)); setShowSuggestions(true); })
+        .catch(() => {});
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -103,8 +107,8 @@ export function Header() {
             <DropdownMenuContent className="w-56">
               {categories.map(cat => (
                 <DropdownMenuItem key={cat.id} asChild>
-                  <Link to={`/category/${cat.slug}`} className="flex items-center gap-2">
-                      <IconRenderer name={cat.icon} className="h-4 w-4" />
+                  <Link to={`/category/${cat.slug ?? cat.id}`} className="flex items-center gap-2">
+                      <IconRenderer name={cat.icon ?? ''} className="h-4 w-4" />
                     <span>{cat.name}</span>
                     <Badge variant="secondary" className="ml-auto text-xs">{cat.productCount}</Badge>
                   </Link>

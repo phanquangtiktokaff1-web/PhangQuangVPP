@@ -1,23 +1,24 @@
 import { Link } from 'react-router';
-import { BarChart2, X, ShoppingCart, Star } from 'lucide-react';
+import { BarChart2, ShoppingCart, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useCartStore } from '@/store/cart-store';
-import { formatPrice, getBrandById } from '@/lib/mock-data';
+import { formatPrice } from '@/lib/api-service';
 import { toast } from 'sonner';
 
 export function ComparePage() {
-  const { getCompareProducts, removeFromCompare, clearCompare, compareItems } = useWishlistStore();
+  const { products: wishlistProducts } = useWishlistStore();
   const addItem = useCartStore(s => s.addItem);
-  const compareProducts = getCompareProducts();
+  // Compare up to 3 wishlist items
+  const compareProducts = wishlistProducts.slice(0, 3);
 
   if (compareProducts.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <BarChart2 className="h-20 w-20 text-muted-foreground mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Chưa có sản phẩm để so sánh</h1>
-        <p className="text-muted-foreground mb-6">Thêm 2-3 sản phẩm để so sánh</p>
+        <p className="text-muted-foreground mb-6">Thêm sản phẩm vào danh sách yêu thích để so sánh</p>
         <Link to="/"><Button size="lg">Khám phá sản phẩm</Button></Link>
       </div>
     );
@@ -25,17 +26,14 @@ export function ComparePage() {
 
   // Collect all specification keys
   const allSpecKeys = new Set<string>();
-  compareProducts.forEach(p => Object.keys(p.specifications).forEach(k => allSpecKeys.add(k)));
+  compareProducts.forEach(p => Object.keys(p.specifications || {}).forEach(k => allSpecKeys.add(k)));
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart2 className="h-6 w-6" /> So sánh sản phẩm ({compareItems.length}/3)
+          <BarChart2 className="h-6 w-6" /> So sánh sản phẩm ({compareProducts.length}/3)
         </h1>
-        <Button variant="outline" onClick={() => { clearCompare(); toast.info('Đã xóa tất cả'); }}>
-          Xóa tất cả
-        </Button>
       </div>
 
       <div className="overflow-x-auto">
@@ -45,18 +43,10 @@ export function ComparePage() {
               <th className="text-left p-3 w-40 bg-gray-50 font-semibold">Sản phẩm</th>
               {compareProducts.map(product => (
                 <th key={product.id} className="p-3 text-center bg-gray-50">
-                  <div className="relative">
-                    <button
-                      onClick={() => { removeFromCompare(product.id); toast.info('Đã xóa khỏi so sánh'); }}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                    <Link to={`/product/${product.slug}`}>
-                      <img src={product.images[0]?.url} alt={product.name} className="w-32 h-32 object-cover rounded-lg mx-auto mb-2" />
-                      <div className="font-medium text-sm hover:text-primary">{product.name}</div>
-                    </Link>
-                  </div>
+                  <Link to={`/product/${product.slug}`}>
+                    <img src={product.images[0]?.url} alt={product.name} className="w-32 h-32 object-cover rounded-lg mx-auto mb-2" />
+                    <div className="font-medium text-sm hover:text-primary">{product.name}</div>
+                  </Link>
                 </th>
               ))}
             </tr>
@@ -79,7 +69,7 @@ export function ComparePage() {
             <tr className="border-t bg-gray-50/50">
               <td className="p-3 font-medium text-muted-foreground">Thương hiệu</td>
               {compareProducts.map(p => (
-                <td key={p.id} className="p-3 text-center">{getBrandById(p.brandId)?.name}</td>
+                <td key={p.id} className="p-3 text-center">{p.brandId}</td>
               ))}
             </tr>
 
@@ -109,21 +99,13 @@ export function ComparePage() {
               ))}
             </tr>
 
-            {/* Sold */}
-            <tr className="border-t">
-              <td className="p-3 font-medium text-muted-foreground">Đã bán</td>
-              {compareProducts.map(p => (
-                <td key={p.id} className="p-3 text-center">{p.sold}</td>
-              ))}
-            </tr>
-
             {/* Colors */}
-            <tr className="border-t bg-gray-50/50">
+            <tr className="border-t">
               <td className="p-3 font-medium text-muted-foreground">Màu sắc</td>
               {compareProducts.map(p => (
                 <td key={p.id} className="p-3 text-center">
                   <div className="flex flex-wrap gap-1 justify-center">
-                    {p.colors.map(c => <Badge key={c} variant="outline" className="text-xs">{c}</Badge>)}
+                    {(p.colors || []).map(c => <Badge key={c} variant="outline" className="text-xs">{c}</Badge>)}
                   </div>
                 </td>
               ))}
@@ -135,7 +117,7 @@ export function ComparePage() {
                 <td className="p-3 font-medium text-muted-foreground">{key}</td>
                 {compareProducts.map(p => (
                   <td key={p.id} className="p-3 text-center text-sm">
-                    {p.specifications[key] || '-'}
+                    {(p.specifications || {})[key] || '-'}
                   </td>
                 ))}
               </tr>
@@ -149,7 +131,7 @@ export function ComparePage() {
                   <Button
                     size="sm"
                     className="gap-1"
-                    onClick={() => { addItem(p.id); toast.success('Đã thêm vào giỏ hàng!'); }}
+                    onClick={() => { void addItem(p.id); toast.success('Đã thêm vào giỏ hàng!'); }}
                     disabled={p.stock === 0}
                   >
                     <ShoppingCart className="h-4 w-4" /> Thêm vào giỏ

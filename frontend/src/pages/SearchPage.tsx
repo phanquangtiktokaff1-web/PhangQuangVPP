@@ -1,24 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router';
 import { Search } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProductCard } from '@/components/product/ProductCard';
-import { searchProducts } from '@/lib/mock-data';
+import { catalogApi, type Product } from '@/lib/api-service';
 
 export function SearchPage() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'popular');
+  const [results, setResults] = useState<Product[]>([]);
 
-  const results = useMemo(() => {
-    let filtered = searchProducts(query);
-    switch (sortBy) {
-      case 'price-asc': filtered.sort((a, b) => a.price - b.price); break;
-      case 'price-desc': filtered.sort((a, b) => b.price - a.price); break;
-      case 'newest': filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
-      case 'popular': filtered.sort((a, b) => b.sold - a.sold); break;
-    }
-    return filtered;
+  useEffect(() => {
+    catalogApi.getProducts({ q: query || undefined, sort: sortBy }).then(setResults).catch(() => {});
   }, [query, sortBy]);
 
   return (

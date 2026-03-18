@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useCartStore } from '@/store/cart-store';
-import { formatPrice, getProductById } from '@/lib/mock-data';
+import { formatPrice } from '@/lib/api-service';
 import { toast } from 'sonner';
 
 export function CartPage() {
@@ -20,10 +20,7 @@ export function CartPage() {
   const [couponInput, setCouponInput] = useState('');
   const navigate = useNavigate();
 
-  const cartProducts = items.map(item => ({
-    ...item,
-    product: getProductById(item.productId)!,
-  })).filter(item => item.product);
+  const cartProducts = items.filter(item => item.product);
 
   const handleApplyVoucher = async () => {
     if (!couponInput.trim()) return;
@@ -57,18 +54,18 @@ export function CartPage() {
         {/* Cart items */}
         <div className="lg:col-span-2 space-y-4">
           {cartProducts.map(({ productId, quantity, customization, product }) => {
-            const price = product.price;
+            const price = product!.price;
             return (
               <Card key={productId}>
                 <CardContent className="p-4">
                   <div className="flex gap-4">
-                    <Link to={`/product/${product.slug}`}>
-                      <img src={product.images[0]?.url} alt={product.name} className="w-24 h-24 object-cover rounded-md" />
+                    <Link to={`/product/${product!.slug}`}>
+                      <img src={product!.images[0]?.url} alt={product!.name} className="w-24 h-24 object-cover rounded-md" />
                     </Link>
                     <div className="flex-1">
                       <div className="flex justify-between">
                         <div>
-                          <Link to={`/product/${product.slug}`} className="font-medium hover:text-primary text-foreground">
+                          <Link to={`/product/${product!.slug}`} className="font-medium hover:text-primary text-foreground">
                             {product.name}
                           </Link>
                           {customization && (
