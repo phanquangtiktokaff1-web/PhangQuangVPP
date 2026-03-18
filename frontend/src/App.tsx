@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ScrollToTop } from '@/components/layout/ScrollToTop';
 
 // Layouts
 import { CustomerLayout } from '@/components/layout/CustomerLayout';
@@ -37,6 +38,7 @@ function App() {
       <Toaster richColors position="top-right" />
       <TooltipProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             {/* Auth pages (no layout) */}
             <Route path="/login" element={<LoginPage />} />

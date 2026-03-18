@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
-import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, BarChart2, Sparkles, Building2 } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Minus, Plus, Sparkles, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,7 +31,7 @@ export function ProductDetailPage() {
   const [reviewComment, setReviewComment] = useState('');
 
   const addItem = useCartStore(s => s.addItem);
-  const { addToWishlist, removeFromWishlist, isInWishlist, addToCompare } = useWishlistStore();
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
   const { isAuthenticated } = useAuthStore();
 
   if (!product) {
@@ -113,7 +113,6 @@ export function ProductDetailPage() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             {brand && <Badge variant="outline">{brand.name}</Badge>}
-            <span className="text-sm text-muted-foreground">SKU: {product.sku}</span>
           </div>
 
           <h1 className="text-2xl font-bold mb-3">{product.name}</h1>
@@ -236,45 +235,20 @@ export function ProductDetailPage() {
                 Mua ngay
               </Button>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => {
-                  if (inWishlist) { removeFromWishlist(product.id); toast.info('Đã xóa khỏi yêu thích'); }
-                  else { addToWishlist(product.id); toast.success('Đã thêm vào yêu thích!'); }
-                }}
-              >
-                <Heart className={`h-4 w-4 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
-                {inWishlist ? 'Bỏ yêu thích' : 'Yêu thích'}
-              </Button>
-              <Button
-                variant="outline"
-                className="flex-1 gap-2"
-                onClick={() => {
-                  const success = addToCompare(product.id);
-                  if (success) toast.success('Đã thêm vào so sánh!');
-                  else toast.error('Tối đa 3 sản phẩm so sánh');
-                }}
-              >
-                <BarChart2 className="h-4 w-4" /> So sánh
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={() => {
+                if (inWishlist) { removeFromWishlist(product.id); toast.info('Đã xóa khỏi yêu thích'); }
+                else { addToWishlist(product.id); toast.success('Đã thêm vào yêu thích!'); }
+              }}
+            >
+              <Heart className={`h-4 w-4 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+              {inWishlist ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
+            </Button>
           </div>
 
-          {/* Shipping info */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { icon: Truck, text: 'Miễn phí ship từ 500K' },
-              { icon: Shield, text: 'Hàng chính hãng' },
-              { icon: RotateCcw, text: 'Đổi trả 7 ngày' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                <item.icon className="h-4 w-4 text-primary" />
-                <span>{item.text}</span>
-              </div>
-            ))}
-          </div>
+
         </div>
       </div>
 

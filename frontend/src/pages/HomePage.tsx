@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ArrowRight, Truck, Shield, Headphones, RotateCcw, Building2 } from 'lucide-react';
+import { ArrowRight, Building2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +8,14 @@ import { ProductCard } from '@/components/product/ProductCard';
 import { categories, products } from '@/lib/mock-data';
 
 export function HomePage() {
-  const bestSellers = [...products].sort((a, b) => b.sold - a.sold).slice(0, 6);
+  const bestSellers = [...products].sort((a, b) => b.sold - a.sold).slice(0, 8);
+  const newProducts = [...products]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 4);
+  const discountedProducts = [...products]
+    .filter(p => p.discount > 0)
+    .sort((a, b) => b.discount - a.discount)
+    .slice(0, 4);
 
   return (
     <div>
@@ -21,16 +28,13 @@ export function HomePage() {
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
               <Badge className="mb-4 bg-white/15 text-white border border-white/30 backdrop-blur-sm">QuangVPP</Badge>
-
               <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4">
                 Văn phòng phẩm cho
                 <span className="block text-amber-300">học tập & công việc</span>
               </h1>
-
               <p className="text-base text-white/75 mb-7 max-w-md">
                 Danh mục rõ ràng, dễ chọn. Phù hợp cho cá nhân, văn phòng và doanh nghiệp.
               </p>
-
               <div className="flex flex-wrap gap-3">
                 <Link to="/category/but-viet">
                   <Button size="lg" className="bg-amber-400 text-amber-950 hover:bg-amber-300 shadow-lg shadow-amber-500/20 font-semibold">
@@ -38,17 +42,12 @@ export function HomePage() {
                   </Button>
                 </Link>
                 <Link to="/wholesale">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="!bg-transparent border-white/50 text-white hover:!bg-white/10 hover:text-white"
-                  >
+                  <Button size="lg" variant="outline" className="!bg-transparent border-white/50 text-white hover:!bg-white/10 hover:text-white">
                     <Building2 className="h-4 w-4 mr-1.5 text-amber-300" /> Mua sỉ
                   </Button>
                 </Link>
               </div>
             </div>
-
             <div className="hidden md:block">
               <div className="relative rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm shadow-2xl">
                 <img
@@ -62,28 +61,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Trust bar */}
-      <section className="border-b bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
-            {[
-              { icon: Truck, title: 'Giao hàng nhanh', desc: 'Theo khu vực & đơn hàng' },
-              { icon: Shield, title: 'Rõ nguồn gốc', desc: 'Thông tin minh bạch' },
-              { icon: RotateCcw, title: 'Đổi trả dễ dàng', desc: 'Theo chính sách cửa hàng' },
-              { icon: Headphones, title: 'Hỗ trợ 24/7', desc: 'Giải đáp khi cần' },
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-4">
-                <feature.icon className="h-7 w-7 text-primary shrink-0" />
-                <div>
-                  <div className="font-semibold text-sm">{feature.title}</div>
-                  <div className="text-xs text-muted-foreground">{feature.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Categories */}
       <section className="container mx-auto px-4 pt-10 pb-6">
         <div className="flex items-center justify-between mb-5">
@@ -92,7 +69,7 @@ export function HomePage() {
             Tất cả <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {categories.map(cat => (
             <Link key={cat.id} to={`/category/${cat.slug}`}>
               <Card className="hover:shadow-md transition-all hover:-translate-y-0.5 text-center group cursor-pointer">
@@ -113,14 +90,52 @@ export function HomePage() {
         <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-xl font-bold">Bán chạy nhất</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">Sản phẩm được khách hàng yêu thích</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Sản phẩm được khách hàng tin dùng</p>
           </div>
           <Link to="/search?sort=popular" className="text-primary text-sm hover:underline flex items-center gap-1">
             Xem tất cả <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {bestSellers.map(product => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      </section>
+
+      {/* Discounted Products */}
+      {discountedProducts.length > 0 && (
+        <section className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <span className="text-xl font-bold">Đang giảm giá</span>
+              <Badge className="bg-rose-600 text-white text-xs">HOT</Badge>
+            </div>
+            <Link to="/search?sort=discount" className="text-primary text-sm hover:underline flex items-center gap-1">
+              Xem tất cả <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            {discountedProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* New Products */}
+      <section className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold">Mới nhất</span>
+            <Badge variant="outline" className="text-primary border-primary text-xs">NEW</Badge>
+          </div>
+          <Link to="/search?sort=newest" className="text-primary text-sm hover:underline flex items-center gap-1">
+            Xem tất cả <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {newProducts.map(product => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
@@ -138,7 +153,7 @@ export function HomePage() {
                   <Building2 className="h-5 w-5 text-amber-300" /> Mua hàng số lượng lớn?
                 </h2>
                 <p className="text-white/70 text-sm max-w-md">
-                  Nhận báo giá ưu đãi theo số lượng, hỗ trợ in logo thương hiệu lên sản phẩm cho quà tặng và sự kiện doanh nghiệp.
+                  Nhận báo giá ưu đãi theo số lượng, hỗ trợ in logo thương hiệu lên sản phẩm cho quà tặng và sự kiện.
                 </p>
               </div>
               <div className="flex gap-3 shrink-0">
@@ -148,8 +163,8 @@ export function HomePage() {
                   </Button>
                 </Link>
                 <Link to="/customize">
-                  <Button size="lg" variant="outline" className="!bg-transparent border-white/40 text-white hover:!bg-white/10 whitespace-nowrap">
-                    In ấn & Tùy chỉnh
+                  <Button size="lg" variant="outline" className="!bg-transparent border-white/40 text-white hover:!bg-white/10 whitespace-nowrap gap-2">
+                    <Sparkles className="h-4 w-4" /> In ấn & Tùy chỉnh
                   </Button>
                 </Link>
               </div>

@@ -25,7 +25,7 @@ export function CheckoutPage() {
   } = useCartStore();
 
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderId] = useState(`ORD-${Date.now().toString().slice(-6)}`);
+  const [orderId] = useState(() => `ORD-${Date.now().toString().slice(-6)}`);
 
   // Address form state
   const [addrName, setAddrName] = useState(user?.addresses[0]?.name || user?.name || '');
@@ -61,7 +61,7 @@ export function CheckoutPage() {
         <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-4" />
         <h1 className="text-2xl font-bold mb-2">Đặt hàng thành công!</h1>
         <p className="text-muted-foreground mb-2">Mã đơn hàng: <span className="font-bold text-foreground">{orderId}</span></p>
-        <p className="text-muted-foreground mb-6">Cảm ơn bạn đã mua hàng tại VP Shop. Chúng tôi sẽ xử lý đơn hàng trong thời gian sớm nhất.</p>
+        <p className="text-muted-foreground mb-6">Cảm ơn bạn đã mua hàng tại QuangVPP. Chúng tôi sẽ xử lý đơn hàng trong thời gian sớm nhất.</p>
         <div className="flex gap-3 justify-center">
           <Link to="/orders"><Button>Xem đơn hàng</Button></Link>
           <Link to="/"><Button variant="outline">Tiếp tục mua sắm</Button></Link>
@@ -84,16 +84,20 @@ export function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Quick select from saved addresses */}
+              {/* Saved addresses - prominent card selection */}
               {user && user.addresses.length > 0 && (
-                <div className="mb-4">
-                  <Label className="mb-2 block text-sm">Chọn địa chỉ đã lưu:</Label>
-                  <div className="flex flex-wrap gap-2">
+                <div className="mb-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-medium text-foreground">Chọn địa chỉ đã lưu</p>
+                    <Link to="/profile" className="text-xs text-primary hover:underline">
+                      Quản lý địa chỉ →
+                    </Link>
+                  </div>
+                  <div className="space-y-2">
                     {user.addresses.map(addr => (
-                      <Badge
+                      <label
                         key={addr.id}
-                        variant={addrStreet === addr.street ? 'default' : 'outline'}
-                        className="cursor-pointer"
+                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent transition-colors ${addrStreet === addr.street ? 'border-primary bg-primary/5' : ''}`}
                         onClick={() => {
                           setAddrName(addr.name);
                           setAddrPhone(addr.phone);
@@ -103,9 +107,29 @@ export function CheckoutPage() {
                           setAddrCity(addr.city);
                         }}
                       >
-                        {addr.name} {addr.isDefault && '(Mặc định)'}
-                      </Badge>
+                        <input
+                          type="radio"
+                          readOnly
+                          checked={addrStreet === addr.street}
+                          className="mt-0.5 shrink-0 accent-primary"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium text-sm">{addr.name}</span>
+                            <span className="text-muted-foreground text-xs">|</span>
+                            <span className="text-sm text-muted-foreground">{addr.phone}</span>
+                            {addr.isDefault && <Badge variant="secondary" className="text-[10px] py-0">Mặc định</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                            {addr.street}{addr.ward ? `, ${addr.ward}` : ''}{addr.district ? `, ${addr.district}` : ''}, {addr.city}
+                          </p>
+                        </div>
+                      </label>
                     ))}
+                  </div>
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                    <div className="relative flex justify-center text-xs text-muted-foreground"><span className="bg-card px-2">hoặc nhập địa chỉ mới</span></div>
                   </div>
                 </div>
               )}
