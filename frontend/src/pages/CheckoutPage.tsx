@@ -19,8 +19,8 @@ export function CheckoutPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const {
-    items, shippingAddress, paymentMethod, shippingMethod, voucherCode, voucherDiscount, note,
-    setShippingAddress, setPaymentMethod, setShippingMethod, setNote,
+    items, paymentMethod, shippingMethod, voucherCode, voucherDiscount, note,
+    setPaymentMethod, setShippingMethod, setNote,
     getSubtotal, getShippingFee, getTotal, clearCart
   } = useCartStore();
 

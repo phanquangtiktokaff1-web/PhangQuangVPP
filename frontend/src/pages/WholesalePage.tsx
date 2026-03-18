@@ -54,7 +54,7 @@ export function WholesalePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-gradient-to-r from-green-600 to-emerald-600 text-white py-12">
+      <section className="bg-gradient-to-r from-primary to-blue-700 text-white py-12">
         <div className="container mx-auto px-4 text-center">
           <Badge className="bg-white/20 text-white border-0 mb-4 text-lg px-4 py-1">
             <Building2 className="h-5 w-5 mr-1" /> Mua hàng sỉ

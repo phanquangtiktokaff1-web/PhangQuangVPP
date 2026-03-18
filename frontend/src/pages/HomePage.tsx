@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ProductCard } from '@/components/product/ProductCard';
 import { CountdownTimer } from '@/components/product/CountdownTimer';
-import { categories, products, getFlashSaleProducts, formatPrice } from '@/lib/mock-data';
+import { categories, products, getFlashSaleProducts } from '@/lib/mock-data';
 
 export function HomePage() {
   const flashSaleProducts = getFlashSaleProducts();
@@ -181,7 +181,7 @@ export function HomePage() {
 
       {/* Wholesale Banner */}
       <section className="container mx-auto px-4 pb-10">
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <Card className="bg-gradient-to-r from-secondary to-background border-border">
           <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <h2 className="text-2xl font-bold mb-2">🏢 Mua hàng số lượng lớn?</h2>
@@ -191,7 +191,7 @@ export function HomePage() {
               </p>
             </div>
             <Link to="/wholesale">
-              <Button size="lg" className="bg-green-600 hover:bg-green-700 whitespace-nowrap">
+              <Button size="lg" className="bg-primary hover:bg-primary/90 whitespace-nowrap">
                 Yêu cầu báo giá <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>

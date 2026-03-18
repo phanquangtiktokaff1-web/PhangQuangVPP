@@ -1,17 +1,11 @@
 import { Link } from 'react-router';
-import { Heart, Trash2, ShoppingCart, BarChart2 } from 'lucide-react';
+import { Heart, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ProductCard } from '@/components/product/ProductCard';
 import { useWishlistStore } from '@/store/wishlist-store';
-import { useCartStore } from '@/store/cart-store';
-import { formatPrice } from '@/lib/mock-data';
-import { toast } from 'sonner';
 
 export function WishlistPage() {
-  const { getWishlistProducts, removeFromWishlist, items } = useWishlistStore();
-  const addItem = useCartStore(s => s.addItem);
+  const { getWishlistProducts, items } = useWishlistStore();
   const wishlistProducts = getWishlistProducts();
 
   if (wishlistProducts.length === 0) {

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { getDashboardStats, formatPrice, mockOrders } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
-const COLORS = ['#f59e0b', '#3b82f6', '#8b5cf6', '#22c55e', '#ef4444', '#f97316'];
+const COLORS = ['#03045E', '#023E8A', '#0077B6', '#0096C7', '#00B4D8', '#48CAE4'];
 
 export function AdminDashboard() {
   const stats = getDashboardStats();
@@ -96,7 +96,7 @@ export function AdminDashboard() {
                 <XAxis dataKey="month" />
                 <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`} />
                 <Tooltip formatter={(value) => formatPrice(value as number)} />
-                <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Doanh thu" />
+                <Bar dataKey="revenue" fill="#0077B6" radius={[4, 4, 0, 0]} name="Doanh thu" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -144,7 +144,7 @@ export function AdminDashboard() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="orders" stroke="#8b5cf6" strokeWidth={2} name="Đơn hàng" />
+                <Line type="monotone" dataKey="orders" stroke="#023E8A" strokeWidth={2} name="Đơn hàng" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

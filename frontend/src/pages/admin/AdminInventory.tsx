@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { products, categories, formatPrice } from '@/lib/mock-data';
+import { products, categories } from '@/lib/mock-data';
 import { toast } from 'sonner';
 
 export function AdminInventory() {

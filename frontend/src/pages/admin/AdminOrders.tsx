@@ -25,7 +25,6 @@ const statusConfig: Record<OrderStatus, { label: string; color: string }> = {
 export function AdminOrders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
 
   const filteredOrders = mockOrders.filter(o => {
     const matchSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -33,8 +32,6 @@ export function AdminOrders() {
     const matchStatus = statusFilter === 'all' || o.status === statusFilter;
     return matchSearch && matchStatus;
   });
-
-  const order = selectedOrder ? mockOrders.find(o => o.id === selectedOrder) : null;
 
   return (
     <div className="space-y-6">
@@ -109,7 +106,7 @@ export function AdminOrders() {
                     <div className="flex justify-end gap-1">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedOrder(order.id)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Eye className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>

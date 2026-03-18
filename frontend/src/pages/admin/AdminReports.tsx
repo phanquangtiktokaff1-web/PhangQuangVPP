@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getDashboardStats, formatPrice, products, mockOrders, mockUsers } from '@/lib/mock-data';
+import { getDashboardStats, formatPrice, products, mockUsers } from '@/lib/mock-data';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Legend, AreaChart, Area } from 'recharts';
 
 export function AdminReports() {
@@ -83,7 +82,7 @@ export function AdminReports() {
                   <XAxis dataKey="month" />
                   <YAxis tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`} />
                   <Tooltip formatter={(value) => formatPrice(value as number)} />
-                  <Area type="monotone" dataKey="revenue" stroke="#3b82f6" fill="#3b82f680" name="Doanh thu" />
+                  <Area type="monotone" dataKey="revenue" stroke="#0077B6" fill="#0077B680" name="Doanh thu" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -101,7 +100,7 @@ export function AdminReports() {
                   <XAxis type="number" tickFormatter={(v) => `${(v / 1000000).toFixed(0)}M`} />
                   <YAxis type="category" dataKey="name" width={100} />
                   <Tooltip formatter={(value) => formatPrice(value as number)} />
-                  <Bar dataKey="revenue" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="Doanh thu" />
+                  <Bar dataKey="revenue" fill="#0096C7" radius={[0, 4, 4, 0]} name="Doanh thu" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -178,8 +177,8 @@ export function AdminReports() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="newCustomers" stroke="#f59e0b" strokeWidth={2} name="Khách mới" />
-                  <Line type="monotone" dataKey="totalCustomers" stroke="#3b82f6" strokeWidth={2} name="Tổng khách" />
+                  <Line type="monotone" dataKey="newCustomers" stroke="#00B4D8" strokeWidth={2} name="Khách mới" />
+                  <Line type="monotone" dataKey="totalCustomers" stroke="#023E8A" strokeWidth={2} name="Tổng khách" />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>

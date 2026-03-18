@@ -39,7 +39,7 @@ export function OrdersPage() {
     ? mockOrders
     : mockOrders.filter(o => o.status === selectedTab);
 
-  const handleReturn = (orderId: string) => {
+  const handleReturn = () => {
     if (!returnReason.trim()) {
       toast.error('Vui lòng nhập lý do hoàn hàng');
       return;
@@ -72,7 +72,6 @@ export function OrdersPage() {
             <div className="space-y-4">
               {filteredOrders.map(order => {
                 const status = statusConfig[order.status];
-                const StatusIcon = status.icon;
                 return (
                   <Card key={order.id}>
                     <CardHeader className="pb-3">
@@ -165,7 +164,7 @@ export function OrdersPage() {
                                       onChange={(e) => setReturnReason(e.target.value)}
                                     />
                                   </div>
-                                  <Button onClick={() => handleReturn(order.id)} className="w-full">
+                                  <Button onClick={handleReturn} className="w-full">
                                     Gửi yêu cầu
                                   </Button>
                                 </div>

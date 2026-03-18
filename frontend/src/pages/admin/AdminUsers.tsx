@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Lock, Unlock, Shield, UserCheck, UserX } from 'lucide-react';
+import { Search, Lock, Unlock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
