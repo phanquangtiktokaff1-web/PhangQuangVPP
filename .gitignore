@@ -1,0 +1,52 @@
+# --- Dependencies ---
+node_modules/
+jspm_packages/
+typings/
+
+# --- Build outputs ---
+# Frontend build
+frontend/dist/
+frontend/build/
+# Backend build (nếu bạn dùng TypeScript/NestJS)
+backend/dist/
+backend/out/
+
+# --- Environment variables (QUAN TRỌNG) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env
+
+# --- Debug logs ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --- Operating System files ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# --- IDE/Editor files ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# --- Testing ---
+/coverage
+/.nyc_output
+
+# --- Others ---
+build/
+temp/

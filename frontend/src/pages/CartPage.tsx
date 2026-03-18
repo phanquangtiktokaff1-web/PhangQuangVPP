@@ -1,0 +1,187 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { Trash2, Minus, Plus, ShoppingCart, Tag, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { useCartStore } from '@/store/cart-store';
+import { formatPrice, getProductById } from '@/lib/mock-data';
+import { toast } from 'sonner';
+
+export function CartPage() {
+  const {
+    items, voucherCode, voucherDiscount,
+    updateQuantity, removeItem, clearCart,
+    applyVoucher, removeVoucher,
+    getSubtotal, getShippingFee, getTotal
+  } = useCartStore();
+  const [couponInput, setCouponInput] = useState('');
+  const navigate = useNavigate();
+
+  const cartProducts = items.map(item => ({
+    ...item,
+    product: getProductById(item.productId)!,
+  })).filter(item => item.product);
+
+  const handleApplyVoucher = () => {
+    if (!couponInput.trim()) return;
+    const success = applyVoucher(couponInput);
+    if (success) {
+      toast.success('Áp dụng mã giảm giá thành công!');
+      setCouponInput('');
+    } else {
+      toast.error('Mã giảm giá không hợp lệ');
+    }
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <ShoppingCart className="h-20 w-20 text-muted-foreground mx-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Giỏ hàng trống</h1>
+        <p className="text-muted-foreground mb-6">Hãy thêm sản phẩm vào giỏ hàng</p>
+        <Link to="/">
+          <Button size="lg">Tiếp tục mua sắm</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Giỏ hàng ({items.length} sản phẩm)</h1>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Cart items */}
+        <div className="lg:col-span-2 space-y-4">
+          {cartProducts.map(({ productId, quantity, customization, product }) => {
+            const price = product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price;
+            return (
+              <Card key={productId}>
+                <CardContent className="p-4">
+                  <div className="flex gap-4">
+                    <Link to={`/product/${product.slug}`}>
+                      <img src={product.images[0]?.url} alt={product.name} className="w-24 h-24 object-cover rounded-md" />
+                    </Link>
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <div>
+                          <Link to={`/product/${product.slug}`} className="font-medium hover:text-primary text-foreground">
+                            {product.name}
+                          </Link>
+                          {product.isFlashSale && <Badge className="ml-2 bg-red-500 text-white text-xs">Flash Sale</Badge>}
+                          {customization && (
+                            <div className="text-xs text-purple-600 mt-1">
+                              ✨ {customization.type}: {customization.text}
+                            </div>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" className="text-red-500 h-8 w-8" onClick={() => { removeItem(productId); toast.info('Đã xóa sản phẩm'); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center border rounded-md">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(productId, quantity - 1)}>
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-10 text-center text-sm">{quantity}</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(productId, quantity + 1)}>
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-red-600">{formatPrice(price * quantity)}</div>
+                          {quantity > 1 && <div className="text-xs text-muted-foreground">{formatPrice(price)}/cái</div>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          <div className="flex justify-between">
+            <Link to="/">
+              <Button variant="outline">← Tiếp tục mua sắm</Button>
+            </Link>
+            <Button variant="ghost" className="text-red-500" onClick={() => { clearCart(); toast.info('Đã xóa giỏ hàng'); }}>
+              Xóa tất cả
+            </Button>
+          </div>
+        </div>
+
+        {/* Order summary */}
+        <div>
+          <Card className="sticky top-24">
+            <CardHeader>
+              <CardTitle>Tóm tắt đơn hàng</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Voucher */}
+              <div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nhập mã giảm giá"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyVoucher()}
+                  />
+                  <Button variant="outline" onClick={handleApplyVoucher}>
+                    <Tag className="h-4 w-4" />
+                  </Button>
+                </div>
+                {voucherCode && (
+                  <div className="flex items-center justify-between mt-2 text-sm">
+                    <Badge variant="secondary" className="gap-1">
+                      🎫 {voucherCode}
+                    </Badge>
+                    <button onClick={removeVoucher} className="text-red-500 text-xs hover:underline">Xóa</button>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Tạm tính</span>
+                  <span>{formatPrice(getSubtotal())}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Phí vận chuyển</span>
+                  <span>{getShippingFee() === 0 ? <span className="text-green-600">Miễn phí</span> : formatPrice(getShippingFee())}</span>
+                </div>
+                {voucherDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Giảm giá</span>
+                    <span>-{formatPrice(voucherDiscount)}</span>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              <div className="flex justify-between font-bold text-lg">
+                <span>Tổng cộng</span>
+                <span className="text-red-600">{formatPrice(getTotal())}</span>
+              </div>
+
+              <Button className="w-full" size="lg" onClick={() => navigate('/checkout')}>
+                Tiến hành thanh toán <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Miễn phí vận chuyển cho đơn hàng từ 500.000đ
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
