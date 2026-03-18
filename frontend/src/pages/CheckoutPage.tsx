@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { MapPin, CreditCard, Truck, FileText, CheckCircle } from 'lucide-react';
+import { MapPin, CreditCard, Truck, FileText, CheckCircle, Banknote, Building, Smartphone, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -183,15 +183,15 @@ export function CheckoutPage() {
               <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
                 <div className="space-y-3">
                   {[
-                    { value: 'cod', label: 'Thanh toán khi nhận hàng (COD)', icon: '💵' },
-                    { value: 'bank_transfer', label: 'Chuyển khoản ngân hàng', icon: '🏦' },
-                    { value: 'momo', label: 'Ví MoMo', icon: '📱' },
-                    { value: 'zalopay', label: 'ZaloPay', icon: '💳' },
-                    { value: 'vnpay', label: 'VNPay', icon: '🔐' },
+                    { value: 'cod', label: 'Thanh toán khi nhận hàng (COD)', icon: <Banknote className="h-5 w-5 text-gray-500" /> },
+                    { value: 'bank_transfer', label: 'Chuyển khoản ngân hàng', icon: <Building className="h-5 w-5 text-blue-500" /> },
+                    { value: 'momo', label: 'Ví MoMo', icon: <Smartphone className="h-5 w-5 text-pink-500" /> },
+                    { value: 'zalopay', label: 'ZaloPay', icon: <CreditCard className="h-5 w-5 text-blue-600" /> },
+                    { value: 'vnpay', label: 'VNPay', icon: <ShieldCheck className="h-5 w-5 text-red-500" /> },
                   ].map(method => (
                     <label key={method.value} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent ${paymentMethod === method.value ? 'border-primary bg-primary/5' : ''}`}>
                       <RadioGroupItem value={method.value} />
-                      <span className="text-xl">{method.icon}</span>
+                      <span className="flex items-center justify-center w-8 h-8 rounded-full bg-background">{method.icon}</span>
                       <span className="font-medium text-sm">{method.label}</span>
                     </label>
                   ))}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Calculator, Send, CheckCircle } from 'lucide-react';
+import { Building2, Calculator, Send, CheckCircle, BadgePercent, Truck, FileText, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,14 +71,14 @@ export function WholesalePage() {
         {/* Benefits */}
         <div className="grid md:grid-cols-4 gap-4 mb-10">
           {[
-            { icon: '💰', title: 'Giảm đến 40%', desc: 'So với giá lẻ' },
-            { icon: '🚚', title: 'Miễn phí vận chuyển', desc: 'Đơn từ 1 triệu' },
-            { icon: '📄', title: 'Xuất hóa đơn VAT', desc: 'Đầy đủ chứng từ' },
-            { icon: '✨', title: 'In logo miễn phí', desc: 'Từ 100 sản phẩm' },
+            { icon: <BadgePercent className="h-8 w-8 text-primary mx-auto" />, title: 'Giảm đến 40%', desc: 'So với giá lẻ' },
+            { icon: <Truck className="h-8 w-8 text-primary mx-auto" />, title: 'Miễn phí vận chuyển', desc: 'Đơn từ 1 triệu' },
+            { icon: <FileText className="h-8 w-8 text-primary mx-auto" />, title: 'Xuất hóa đơn VAT', desc: 'Đầy đủ chứng từ' },
+            { icon: <Sparkles className="h-8 w-8 text-primary mx-auto" />, title: 'In logo miễn phí', desc: 'Từ 100 sản phẩm' },
           ].map((item, i) => (
             <Card key={i}>
               <CardContent className="p-4 text-center">
-                <div className="text-3xl mb-2">{item.icon}</div>
+                <div className="mb-2 flex justify-center">{item.icon}</div>
                 <div className="font-semibold">{item.title}</div>
                 <div className="text-sm text-muted-foreground">{item.desc}</div>
               </CardContent>

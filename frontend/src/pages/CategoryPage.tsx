@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { IconRenderer } from '@/components/ui/icon-renderer';
 import { ProductCard } from '@/components/product/ProductCard';
 import { categories, products, brands, formatPrice } from '@/lib/mock-data';
 
@@ -150,8 +151,13 @@ export function CategoryPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold mb-2">
-          {category ? `${category.icon} ${category.name}` : 'Tất cả sản phẩm'}
+        <h1 className="text-2xl font-bold mb-2 flex items-center gap-2">
+          {category ? (
+            <>
+              <IconRenderer name={category.icon} className="h-6 w-6 text-primary" /> 
+              {category.name}
+            </>
+          ) : 'Tất cả sản phẩm'}
         </h1>
         {category && <p className="text-muted-foreground">{category.description}</p>}
       </div>

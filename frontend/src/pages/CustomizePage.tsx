@@ -69,7 +69,7 @@ export function CustomizePage() {
                     <h3 className="font-medium text-sm mb-1">{product.name}</h3>
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-red-600 text-sm">{formatPrice(product.price)}</span>
-                      <Badge variant="secondary" className="text-xs">✨ Tùy chỉnh</Badge>
+                      <Badge variant="secondary" className="text-xs gap-1"><Sparkles className="h-3 w-3" />Tùy chỉnh</Badge>
                     </div>
                     {product.customizationOptions && (
                       <div className="flex flex-wrap gap-1 mt-2">

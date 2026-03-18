@@ -1,11 +1,11 @@
-const bcrypt = require('bcryptjs');
+﻿const bcrypt = require('bcryptjs');
 
 const categories = [
-  { id: 'cat-1', name: 'Bút viết', slug: 'but-viet', icon: '✏️', description: 'Các loại bút bi, bút gel, bút dạ quang', productCount: 45, image: 'https://images.unsplash.com/photo-1585336261022-680e295ce3fe?w=400' },
-  { id: 'cat-2', name: 'Giấy & Sổ', slug: 'giay-so', icon: '📓', description: 'Giấy A4, sổ tay, vở viết', productCount: 32, image: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400' },
-  { id: 'cat-3', name: 'Kẹp & Ghim', slug: 'kep-ghim', icon: '📎', description: 'Kẹp giấy, ghim bấm, kẹp bướm', productCount: 28, image: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=400' },
-  { id: 'cat-4', name: 'Hồ sơ & Bìa', slug: 'ho-so-bia', icon: '📁', description: 'Bìa hồ sơ, file tài liệu, bìa lá', productCount: 22, image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400' },
-  { id: 'cat-8', name: 'Phụ kiện bàn làm việc', slug: 'phu-kien-ban', icon: '🗂️', description: 'Khay để tài liệu, hộp bút, lịch bàn', productCount: 20, image: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400' },
+  { id: 'cat-1', name: 'Bút viết', slug: 'but-viet', icon: 'PenTool', description: 'Các loại bút bi, bút gel, bút dạ quang', productCount: 45, image: 'https://images.unsplash.com/photo-1585336261022-680e295ce3fe?w=400' },
+  { id: 'cat-2', name: 'Giấy & Sổ', slug: 'giay-so', icon: 'BookOpen', description: 'Giấy A4, sổ tay, vở viết', productCount: 32, image: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=400' },
+  { id: 'cat-3', name: 'Kẹp & Ghim', slug: 'kep-ghim', icon: 'Paperclip', description: 'Kẹp giấy, ghim bấm, kẹp bướm', productCount: 28, image: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=400' },
+  { id: 'cat-4', name: 'Hồ sơ & Bìa', slug: 'ho-so-bia', icon: 'Folder', description: 'Bìa hồ sơ, file tài liệu, bìa lá', productCount: 22, image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400' },
+  { id: 'cat-8', name: 'Phụ kiện bàn làm việc', slug: 'phu-kien-ban', icon: 'Archive', description: 'Khay để tài liệu, hộp bút, lịch bàn', productCount: 20, image: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=400' },
 ];
 
 const brands = [

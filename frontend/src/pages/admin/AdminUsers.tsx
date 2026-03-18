@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Lock, Unlock } from 'lucide-react';
+import { Search, Lock, Unlock, Users, ShieldAlert, UserCog, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,14 +57,14 @@ export function AdminUsers() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Tổng', count: mockUsers.length, icon: '👥' },
-          { label: 'Admin', count: mockUsers.filter(u => u.role === 'admin').length, icon: '🛡️' },
-          { label: 'Nhân viên', count: mockUsers.filter(u => u.role === 'staff').length, icon: '👨‍💼' },
-          { label: 'Khách hàng', count: mockUsers.filter(u => u.role === 'customer').length, icon: '🛒' },
+          { label: 'Tổng', count: mockUsers.length, icon: <Users className="h-6 w-6 text-primary mx-auto" /> },
+          { label: 'Admin', count: mockUsers.filter(u => u.role === 'admin').length, icon: <ShieldAlert className="h-6 w-6 text-primary mx-auto" /> },
+          { label: 'Nhân viên', count: mockUsers.filter(u => u.role === 'staff').length, icon: <UserCog className="h-6 w-6 text-primary mx-auto" /> },
+          { label: 'Khách hàng', count: mockUsers.filter(u => u.role === 'customer').length, icon: <ShoppingCart className="h-6 w-6 text-primary mx-auto" /> },
         ].map((stat, i) => (
           <Card key={i}>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl mb-1">{stat.icon}</div>
+              <div className="mb-2 flex justify-center">{stat.icon}</div>
               <div className="text-2xl font-bold">{stat.count}</div>
               <div className="text-xs text-muted-foreground">{stat.label}</div>
             </CardContent>

@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Heart, ShoppingCart, Star, BarChart2 } from 'lucide-react';
+import { Heart, ShoppingCart, Star, BarChart2, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -68,13 +68,13 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.discount > 0 && (
-              <Badge className="bg-red-500 text-white">-{product.discount}%</Badge>
+              <Badge className="bg-rose-600 text-white">-{product.discount}%</Badge>
             )}
             {product.isFlashSale && (
-              <Badge className="bg-orange-500 text-white">⚡ Flash Sale</Badge>
+              <Badge className="bg-amber-400 text-amber-950 gap-1"><Zap className="h-3 w-3" /> Flash Sale</Badge>
             )}
             {product.isCustomizable && (
-              <Badge variant="secondary">✨ Tùy chỉnh</Badge>
+              <Badge className="bg-violet-100 text-violet-700 gap-1"><Sparkles className="h-3 w-3" /> Tùy chỉnh</Badge>
             )}
           </div>
 
@@ -126,7 +126,7 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
               {[1, 2, 3, 4, 5].map(star => (
                 <Star
                   key={star}
-                  className={`h-3 w-3 ${star <= product.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                  className={`h-3 w-3 ${star <= product.rating ? 'fill-amber-400 text-amber-500' : 'text-gray-300'}`}
                 />
               ))}
             </div>
@@ -136,7 +136,7 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
 
           {/* Price */}
           <div className="flex items-center gap-2 mb-3">
-            <span className="font-bold text-red-600">{formatPrice(currentPrice)}</span>
+            <span className="font-bold text-rose-600">{formatPrice(currentPrice)}</span>
             {currentPrice < product.originalPrice && (
               <span className="text-xs text-muted-foreground line-through">{formatPrice(product.originalPrice)}</span>
             )}

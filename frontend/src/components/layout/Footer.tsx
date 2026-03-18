@@ -9,7 +9,7 @@ export function Footer() {
           {/* Company info */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-xl">Q</div>
+              <img src="/logo.png" alt="QuangVPP logo" className="h-10 w-10 rounded-lg object-cover" />
               <div>
                 <div className="font-bold text-lg text-white">QuangVPP</div>
                 <div className="text-xs text-gray-400">Văn phòng phẩm</div>

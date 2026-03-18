@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Package, Eye, RotateCcw, CheckCircle, Clock, Truck, XCircle, AlertTriangle } from 'lucide-react';
+import { Package, Eye, RotateCcw, CheckCircle, Clock, Truck, XCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -95,7 +95,7 @@ export function OrdersPage() {
                             <div className="flex-1">
                               <div className="font-medium text-sm">{item.productName}</div>
                               {item.customization && (
-                                <div className="text-xs text-purple-600">✨ {item.customization.type}: {item.customization.text}</div>
+                                <div className="text-xs text-purple-600 flex items-center gap-1"><Sparkles className="h-3 w-3" /> {item.customization.type}: {item.customization.text}</div>
                               )}
                               <div className="text-sm text-muted-foreground">x{item.quantity}</div>
                             </div>

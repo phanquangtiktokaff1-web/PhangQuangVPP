@@ -32,7 +32,7 @@ export function CountdownTimer({ endTime, variant = 'default' }: CountdownTimerP
   }, [endTime]);
 
   if (isExpired) {
-    return <span className="text-red-500 text-xs font-medium">Đã kết thúc</span>;
+    return <span className="text-rose-600 text-xs font-medium">Đã kết thúc</span>;
   }
 
   const pad = (n: number) => n.toString().padStart(2, '0');
@@ -40,17 +40,17 @@ export function CountdownTimer({ endTime, variant = 'default' }: CountdownTimerP
   if (variant === 'large') {
     return (
       <div className="flex items-center gap-2">
-        <div className="bg-red-600 text-white rounded-md px-3 py-2 text-center min-w-[60px]">
+        <div className="bg-amber-400 text-amber-950 rounded-md px-3 py-2 text-center min-w-[60px]">
           <div className="text-2xl font-bold">{pad(timeLeft.hours)}</div>
           <div className="text-xs">Giờ</div>
         </div>
-        <span className="text-2xl font-bold text-red-600">:</span>
-        <div className="bg-red-600 text-white rounded-md px-3 py-2 text-center min-w-[60px]">
+        <span className="text-2xl font-bold text-amber-600">:</span>
+        <div className="bg-amber-400 text-amber-950 rounded-md px-3 py-2 text-center min-w-[60px]">
           <div className="text-2xl font-bold">{pad(timeLeft.minutes)}</div>
           <div className="text-xs">Phút</div>
         </div>
-        <span className="text-2xl font-bold text-red-600">:</span>
-        <div className="bg-red-600 text-white rounded-md px-3 py-2 text-center min-w-[60px]">
+        <span className="text-2xl font-bold text-amber-600">:</span>
+        <div className="bg-amber-400 text-amber-950 rounded-md px-3 py-2 text-center min-w-[60px]">
           <div className="text-2xl font-bold">{pad(timeLeft.seconds)}</div>
           <div className="text-xs">Giây</div>
         </div>
@@ -59,12 +59,12 @@ export function CountdownTimer({ endTime, variant = 'default' }: CountdownTimerP
   }
 
   return (
-    <div className="flex items-center gap-1 text-white text-xs">
-      <span className="bg-red-600 rounded px-1.5 py-0.5 font-mono font-bold">{pad(timeLeft.hours)}</span>
+    <div className="flex items-center gap-1 text-amber-100 text-xs">
+      <span className="bg-amber-400 text-amber-950 rounded px-1.5 py-0.5 font-mono font-bold">{pad(timeLeft.hours)}</span>
       <span>:</span>
-      <span className="bg-red-600 rounded px-1.5 py-0.5 font-mono font-bold">{pad(timeLeft.minutes)}</span>
+      <span className="bg-amber-400 text-amber-950 rounded px-1.5 py-0.5 font-mono font-bold">{pad(timeLeft.minutes)}</span>
       <span>:</span>
-      <span className="bg-red-600 rounded px-1.5 py-0.5 font-mono font-bold">{pad(timeLeft.seconds)}</span>
+      <span className="bg-amber-400 text-amber-950 rounded px-1.5 py-0.5 font-mono font-bold">{pad(timeLeft.seconds)}</span>
     </div>
   );
 }

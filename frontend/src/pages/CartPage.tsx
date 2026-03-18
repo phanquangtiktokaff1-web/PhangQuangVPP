@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Trash2, Minus, Plus, ShoppingCart, Tag, ArrowRight } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingCart, Tag, ArrowRight, Sparkles, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,8 +73,8 @@ export function CartPage() {
                           </Link>
                           {product.isFlashSale && <Badge className="ml-2 bg-red-500 text-white text-xs">Flash Sale</Badge>}
                           {customization && (
-                            <div className="text-xs text-purple-600 mt-1">
-                              ✨ {customization.type}: {customization.text}
+                            <div className="text-xs text-purple-600 mt-1 flex items-center gap-1">
+                              <Sparkles className="h-3 w-3" /> {customization.type}: {customization.text}
                             </div>
                           )}
                         </div>
@@ -138,7 +138,7 @@ export function CartPage() {
                 {voucherCode && (
                   <div className="flex items-center justify-between mt-2 text-sm">
                     <Badge variant="secondary" className="gap-1">
-                      🎫 {voucherCode}
+                      <Ticket className="h-3 w-3" /> {voucherCode}
                     </Badge>
                     <button onClick={removeVoucher} className="text-red-500 text-xs hover:underline">Xóa</button>
                   </div>

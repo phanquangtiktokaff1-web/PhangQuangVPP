@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
-import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, BarChart2 } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, BarChart2, Sparkles, Building2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -122,7 +122,7 @@ export function ProductDetailPage() {
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map(star => (
-                <Star key={star} className={`h-4 w-4 ${star <= product.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
+                <Star key={star} className={`h-4 w-4 ${star <= product.rating ? 'fill-amber-400 text-amber-500' : 'text-gray-300'}`} />
               ))}
               <span className="text-sm font-medium ml-1">{product.rating}</span>
             </div>
@@ -133,9 +133,9 @@ export function ProductDetailPage() {
 
           {/* Flash Sale */}
           {product.isFlashSale && product.flashSaleEnd && (
-            <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200 rounded-lg p-4 mb-4">
               <div className="flex items-center justify-between mb-2">
-                <Badge className="bg-red-500">⚡ Flash Sale</Badge>
+                <Badge className="bg-rose-600 text-white gap-1"><Zap className="h-3 w-3" /> Flash Sale</Badge>
                 <CountdownTimer endTime={product.flashSaleEnd} />
               </div>
             </div>
@@ -144,11 +144,11 @@ export function ProductDetailPage() {
           {/* Price */}
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-red-600">{formatPrice(currentPrice)}</span>
+              <span className="text-3xl font-bold text-rose-600">{formatPrice(currentPrice)}</span>
               {currentPrice < product.originalPrice && (
                 <>
                   <span className="text-lg text-muted-foreground line-through">{formatPrice(product.originalPrice)}</span>
-                  <Badge className="bg-red-500">-{product.discount}%</Badge>
+                  <Badge className="bg-rose-600 text-white">-{product.discount}%</Badge>
                 </>
               )}
             </div>
@@ -176,7 +176,7 @@ export function ProductDetailPage() {
           {/* Customization */}
           {product.isCustomizable && product.customizationOptions && (
             <div className="mb-4 p-4 border rounded-lg bg-purple-50">
-              <Label className="mb-2 block font-semibold">✨ Tùy chỉnh sản phẩm</Label>
+              <Label className="mb-2 block font-semibold flex items-center gap-1"><Sparkles className="h-4 w-4" /> Tùy chỉnh sản phẩm</Label>
               <div className="space-y-3">
                 <Select value={customType} onValueChange={setCustomType}>
                   <SelectTrigger>
@@ -202,7 +202,7 @@ export function ProductDetailPage() {
           {/* Wholesale pricing */}
           {product.wholesalePrice && product.wholesalePrice.length > 0 && (
             <div className="mb-4 p-4 border rounded-lg bg-green-50">
-              <Label className="mb-2 block font-semibold">🏢 Giá sỉ</Label>
+              <Label className="mb-2 block font-semibold flex items-center gap-1"><Building2 className="h-4 w-4" /> Giá sỉ</Label>
               <div className="grid grid-cols-3 gap-2">
                 {product.wholesalePrice.map((wp, i) => (
                   <div key={i} className="text-center p-2 bg-white rounded border">

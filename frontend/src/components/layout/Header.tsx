@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ShoppingCart, Heart, User, Search, Menu, ChevronDown, LogOut, Package, Settings } from 'lucide-react';
+import { ShoppingCart, Heart, User, Search, Menu, ChevronDown, LogOut, Package, Settings, Zap, Building2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { IconRenderer } from '@/components/ui/icon-renderer';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
@@ -53,8 +54,8 @@ export function Header() {
         <div className="container mx-auto px-4 flex justify-between items-center">
           <span>Hotline: 1900 1234 | Miễn phí vận chuyển đơn từ 500.000đ</span>
           <div className="flex gap-4">
-            <Link to="/flash-sale" className="hover:underline text-primary-foreground">⚡ Flash Sale</Link>
-            <Link to="/wholesale" className="hover:underline text-primary-foreground">🏢 Mua sỉ</Link>
+            <Link to="/flash-sale" className="hover:underline text-primary-foreground inline-flex items-center gap-1"><Zap className="h-3 w-3" /> Flash Sale</Link>
+            <Link to="/wholesale" className="hover:underline text-primary-foreground inline-flex items-center gap-1"><Building2 className="h-3 w-3" /> Mua sỉ</Link>
           </div>
         </div>
       </div>
@@ -79,15 +80,15 @@ export function Header() {
                       to={`/category/${cat.slug}`}
                       className="flex items-center gap-2 p-2 rounded-md hover:bg-accent text-foreground"
                     >
-                      <span>{cat.icon}</span>
+                      <IconRenderer name={cat.icon} className="h-4 w-4" />
                       <span>{cat.name}</span>
                     </Link>
                   ))}
                 </nav>
                 <div className="border-t mt-4 pt-4 space-y-2">
-                  <Link to="/flash-sale" className="block p-2 hover:bg-accent rounded-md text-foreground">⚡ Flash Sale</Link>
-                  <Link to="/wholesale" className="block p-2 hover:bg-accent rounded-md text-foreground">🏢 Mua sỉ</Link>
-                  <Link to="/customize" className="block p-2 hover:bg-accent rounded-md text-foreground">✨ Tùy chỉnh sản phẩm</Link>
+                  <Link to="/flash-sale" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md text-foreground"><Zap className="h-4 w-4" /> Flash Sale</Link>
+                  <Link to="/wholesale" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md text-foreground"><Building2 className="h-4 w-4" /> Mua sỉ</Link>
+                  <Link to="/customize" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md text-foreground"><Sparkles className="h-4 w-4" /> Tùy chỉnh sản phẩm</Link>
                 </div>
               </div>
             </SheetContent>
@@ -95,7 +96,7 @@ export function Header() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-xl">Q</div>
+            <img src="/logo.png" alt="QuangVPP logo" className="h-10 w-10 rounded-lg object-cover" />
             <div className="hidden sm:block">
               <div className="font-bold text-lg text-foreground leading-tight">QuangVPP</div>
               <div className="text-xs text-muted-foreground">Văn phòng phẩm</div>
@@ -115,7 +116,7 @@ export function Header() {
               {categories.map(cat => (
                 <DropdownMenuItem key={cat.id} asChild>
                   <Link to={`/category/${cat.slug}`} className="flex items-center gap-2">
-                    <span>{cat.icon}</span>
+                      <IconRenderer name={cat.icon} className="h-4 w-4" />
                     <span>{cat.name}</span>
                     <Badge variant="secondary" className="ml-auto text-xs">{cat.productCount}</Badge>
                   </Link>

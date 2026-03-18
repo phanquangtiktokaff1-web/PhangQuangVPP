@@ -49,8 +49,8 @@ export function RegisterPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link to="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-xl">VP</div>
-            <span className="font-bold text-xl">VP Shop</span>
+            <img src="/logo.png" alt="QuangVPP logo" className="h-10 w-10 rounded-lg object-cover" />
+            <span className="font-bold text-xl">QuangVPP</span>
           </Link>
           <CardTitle className="text-2xl">Đăng ký tài khoản</CardTitle>
           <CardDescription>Tạo tài khoản để mua sắm dễ dàng hơn</CardDescription>

@@ -1,8 +1,9 @@
 import { Link } from 'react-router';
-import { ArrowRight, Truck, Shield, Headphones, RotateCcw, Zap } from 'lucide-react';
+import { ArrowRight, Truck, Shield, Headphones, RotateCcw, Zap, BadgePercent, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { IconRenderer } from '@/components/ui/icon-renderer';
 import { ProductCard } from '@/components/product/ProductCard';
 import { CountdownTimer } from '@/components/product/CountdownTimer';
 import { categories, products, getFlashSaleProducts } from '@/lib/mock-data';
@@ -19,7 +20,7 @@ export function HomePage() {
         <div className="container mx-auto px-4 py-12 md:py-20">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <Badge className="mb-4 bg-white/20 text-white border-0">🎉 Giảm đến 50%</Badge>
+              <Badge className="mb-4 bg-white/20 text-white border-0 gap-1"><BadgePercent className="h-3 w-3" /> Giảm đến 50%</Badge>
               <h1 className="text-3xl md:text-5xl font-bold mb-4">
                 Văn phòng phẩm<br />chất lượng cao
               </h1>
@@ -35,7 +36,7 @@ export function HomePage() {
                 </Link>
                 <Link to="/flash-sale">
                   <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                    ⚡ Flash Sale
+                    <Zap className="h-4 w-4 mr-1" /> Flash Sale
                   </Button>
                 </Link>
               </div>
@@ -86,7 +87,9 @@ export function HomePage() {
             <Link key={cat.id} to={`/category/${cat.slug}`}>
               <Card className="hover:shadow-md transition-shadow text-center group cursor-pointer">
                 <CardContent className="p-4">
-                  <div className="text-3xl mb-2">{cat.icon}</div>
+                  <div className="mb-3 flex justify-center text-primary group-hover:scale-110 transition-transform">
+                    <IconRenderer name={cat.icon} className="h-10 w-10" />
+                  </div>
                   <div className="text-sm font-medium group-hover:text-primary transition-colors">{cat.name}</div>
                   <div className="text-xs text-muted-foreground">{cat.productCount} sản phẩm</div>
                 </CardContent>
@@ -143,7 +146,7 @@ export function HomePage() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <Badge className="mb-4 bg-white/20 text-white border-0">✨ Dịch vụ đặc biệt</Badge>
+              <Badge className="mb-4 bg-white/20 text-white border-0 gap-1"><Zap className="h-3 w-3" /> Dịch vụ đặc biệt</Badge>
               <h2 className="text-3xl font-bold mb-4">Tùy chỉnh sản phẩm theo yêu cầu</h2>
               <p className="opacity-90 mb-6">
                 In tên, logo công ty lên bút, sổ tay, cốc đựng bút. Phù hợp cho quà tặng doanh nghiệp, 
@@ -184,7 +187,7 @@ export function HomePage() {
         <Card className="bg-gradient-to-r from-secondary to-background border-border">
           <CardContent className="p-8 flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-bold mb-2">🏢 Mua hàng số lượng lớn?</h2>
+              <h2 className="text-2xl font-bold mb-2 inline-flex items-center gap-2"><Building2 className="h-5 w-5" /> Mua hàng số lượng lớn?</h2>
               <p className="text-muted-foreground">
                 Nhận báo giá đặc biệt cho đơn hàng từ 50 sản phẩm trở lên. 
                 Giảm đến 40% so với giá lẻ!
