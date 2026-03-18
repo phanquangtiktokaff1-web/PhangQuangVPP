@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { ShoppingCart, Heart, User, Search, Menu, ChevronDown, LogOut, Package, Settings, Zap, Building2, Sparkles } from 'lucide-react';
+import { ShoppingCart, Heart, User, Search, Menu, ChevronDown, LogOut, Package, Settings, Building2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,17 +49,6 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b shadow-sm">
-      {/* Top bar */}
-      <div className="bg-primary text-primary-foreground text-xs py-1">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <span>Hotline: 1900 1234 | Miễn phí vận chuyển đơn từ 500.000đ</span>
-          <div className="flex gap-4">
-            <Link to="/flash-sale" className="hover:underline text-primary-foreground inline-flex items-center gap-1"><Zap className="h-3 w-3" /> Flash Sale</Link>
-            <Link to="/wholesale" className="hover:underline text-primary-foreground inline-flex items-center gap-1"><Building2 className="h-3 w-3" /> Mua sỉ</Link>
-          </div>
-        </div>
-      </div>
-
       {/* Main header */}
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center gap-4">
@@ -86,7 +75,6 @@ export function Header() {
                   ))}
                 </nav>
                 <div className="border-t mt-4 pt-4 space-y-2">
-                  <Link to="/flash-sale" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md text-foreground"><Zap className="h-4 w-4" /> Flash Sale</Link>
                   <Link to="/wholesale" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md text-foreground"><Building2 className="h-4 w-4" /> Mua sỉ</Link>
                   <Link to="/customize" className="flex items-center gap-2 p-2 hover:bg-accent rounded-md text-foreground"><Sparkles className="h-4 w-4" /> Tùy chỉnh sản phẩm</Link>
                 </div>
@@ -124,6 +112,12 @@ export function Header() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Link to="/wholesale" className="hidden xl:block">
+            <Button variant="outline" className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50">
+              <Building2 className="h-4 w-4" /> Mua sỉ
+            </Button>
+          </Link>
 
           {/* Search bar */}
           <div className="flex-1 max-w-xl relative">

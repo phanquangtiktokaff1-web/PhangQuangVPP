@@ -19,7 +19,6 @@ import { CheckoutPage } from '@/pages/CheckoutPage';
 import { OrdersPage } from '@/pages/OrdersPage';
 import { WishlistPage } from '@/pages/WishlistPage';
 import { ComparePage } from '@/pages/ComparePage';
-import { FlashSalePage } from '@/pages/FlashSalePage';
 import { CustomizePage } from '@/pages/CustomizePage';
 import { WholesalePage } from '@/pages/WholesalePage';
 
@@ -56,7 +55,6 @@ function App() {
               <Route path="/orders/:id" element={<OrdersPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/compare" element={<ComparePage />} />
-              <Route path="/flash-sale" element={<FlashSalePage />} />
               <Route path="/customize" element={<CustomizePage />} />
               <Route path="/wholesale" element={<WholesalePage />} />
             </Route>

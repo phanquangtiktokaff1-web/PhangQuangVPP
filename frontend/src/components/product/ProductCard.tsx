@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Heart, ShoppingCart, Star, BarChart2, Sparkles, Zap } from 'lucide-react';
+import { Heart, ShoppingCart, Star, BarChart2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +8,6 @@ import { formatPrice } from '@/lib/mock-data';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { toast } from 'sonner';
-import { CountdownTimer } from '@/components/product/CountdownTimer';
 
 interface ProductCardProps {
   product: Product;
@@ -21,7 +20,7 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
 
   const inWishlist = isInWishlist(product.id);
   const inCompare = isInCompare(product.id);
-  const currentPrice = product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price;
+  const currentPrice = product.price;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -70,9 +69,6 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
             {product.discount > 0 && (
               <Badge className="bg-rose-600 text-white">-{product.discount}%</Badge>
             )}
-            {product.isFlashSale && (
-              <Badge className="bg-amber-400 text-amber-950 gap-1"><Zap className="h-3 w-3" /> Flash Sale</Badge>
-            )}
             {product.isCustomizable && (
               <Badge className="bg-violet-100 text-violet-700 gap-1"><Sparkles className="h-3 w-3" /> Tùy chỉnh</Badge>
             )}
@@ -99,13 +95,6 @@ export function ProductCard({ product, showCompare = true }: ProductCardProps) {
               </Button>
             )}
           </div>
-
-          {/* Flash sale countdown */}
-          {product.isFlashSale && product.flashSaleEnd && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-              <CountdownTimer endTime={product.flashSaleEnd} />
-            </div>
-          )}
 
           {/* Out of stock overlay */}
           {product.stock === 0 && (

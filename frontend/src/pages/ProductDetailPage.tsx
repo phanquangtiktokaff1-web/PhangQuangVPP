@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router';
-import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, BarChart2, Sparkles, Building2, Zap } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, BarChart2, Sparkles, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
-import { CountdownTimer } from '@/components/product/CountdownTimer';
 import { ProductCard } from '@/components/product/ProductCard';
 import { products, getBrandById, getCategoryById, formatPrice } from '@/lib/mock-data';
 import { useCartStore } from '@/store/cart-store';
@@ -46,7 +45,7 @@ export function ProductDetailPage() {
   const brand = getBrandById(product.brandId);
   const category = getCategoryById(product.categoryId);
   const inWishlist = isInWishlist(product.id);
-  const currentPrice = product.isFlashSale && product.flashSalePrice ? product.flashSalePrice : product.price;
+  const currentPrice = product.price;
   const relatedProducts = products.filter(p => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 4);
 
   const handleAddToCart = () => {
@@ -130,16 +129,6 @@ export function ProductDetailPage() {
             <span className="text-sm text-muted-foreground">|</span>
             <span className="text-sm text-muted-foreground">{product.sold} đã bán</span>
           </div>
-
-          {/* Flash Sale */}
-          {product.isFlashSale && product.flashSaleEnd && (
-            <div className="bg-gradient-to-r from-rose-50 to-amber-50 border border-rose-200 rounded-lg p-4 mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <Badge className="bg-rose-600 text-white gap-1"><Zap className="h-3 w-3" /> Flash Sale</Badge>
-                <CountdownTimer endTime={product.flashSaleEnd} />
-              </div>
-            </div>
-          )}
 
           {/* Price */}
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
