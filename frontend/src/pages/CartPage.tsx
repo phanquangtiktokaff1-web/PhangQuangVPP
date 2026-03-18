@@ -25,9 +25,9 @@ export function CartPage() {
     product: getProductById(item.productId)!,
   })).filter(item => item.product);
 
-  const handleApplyVoucher = () => {
+  const handleApplyVoucher = async () => {
     if (!couponInput.trim()) return;
-    const success = applyVoucher(couponInput);
+    const success = await applyVoucher(couponInput);
     if (success) {
       toast.success('Áp dụng mã giảm giá thành công!');
       setCouponInput('');
@@ -129,9 +129,9 @@ export function CartPage() {
                     placeholder="Nhập mã giảm giá"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleApplyVoucher()}
+                    onKeyDown={(e) => e.key === 'Enter' && void handleApplyVoucher()}
                   />
-                  <Button variant="outline" onClick={handleApplyVoucher}>
+                  <Button variant="outline" onClick={() => void handleApplyVoucher()}>
                     <Tag className="h-4 w-4" />
                   </Button>
                 </div>

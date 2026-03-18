@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem, Product, Address, PaymentMethod, ShippingMethod } from '@/lib/mock-data';
 import { getProductById } from '@/lib/mock-data';
+import { api } from '@/lib/api';
 
 interface CartState {
   items: CartItem[];
@@ -19,7 +20,7 @@ interface CartState {
   setShippingAddress: (address: Address) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setShippingMethod: (method: ShippingMethod) => void;
-  applyVoucher: (code: string) => boolean;
+  applyVoucher: (code: string) => Promise<boolean>;
   removeVoucher: () => void;
   setNote: (note: string) => void;
 
@@ -81,22 +82,33 @@ export const useCartStore = create<CartState>()(
       setPaymentMethod: (method) => set({ paymentMethod: method }),
       setShippingMethod: (method) => set({ shippingMethod: method }),
 
-      applyVoucher: (code) => {
-        // Mock voucher validation
-        const vouchers: Record<string, number> = {
-          'WELCOME20K': 20000,
-          'SAVE15K': 15000,
-          'SALE10': 0.1, // 10%
-          'BULK20': 0.2, // 20%
-        };
-        const discount = vouchers[code.toUpperCase()];
-        if (discount !== undefined) {
+      applyVoucher: async (code) => {
+        const normalized = code.toUpperCase();
+        try {
           const subtotal = get().getSubtotal();
-          const actualDiscount = discount < 1 ? Math.min(subtotal * discount, 50000) : discount;
-          set({ voucherCode: code.toUpperCase(), voucherDiscount: actualDiscount });
-          return true;
+          const { data } = await api.post('/vouchers/validate', { code: normalized, subtotal });
+          if (data?.valid) {
+            set({ voucherCode: normalized, voucherDiscount: Number(data.discount || 0) });
+            return true;
+          }
+          return false;
+        } catch (_error) {
+          // Fallback to local mock rules if backend is unavailable.
+          const vouchers: Record<string, number> = {
+            'WELCOME20K': 20000,
+            'SAVE15K': 15000,
+            'SALE10': 0.1,
+            'BULK20': 0.2,
+          };
+          const discount = vouchers[normalized];
+          if (discount !== undefined) {
+            const subtotal = get().getSubtotal();
+            const actualDiscount = discount < 1 ? Math.min(subtotal * discount, 50000) : discount;
+            set({ voucherCode: normalized, voucherDiscount: actualDiscount });
+            return true;
+          }
+          return false;
         }
-        return false;
       },
 
       removeVoucher: () => set({ voucherCode: '', voucherDiscount: 0 }),

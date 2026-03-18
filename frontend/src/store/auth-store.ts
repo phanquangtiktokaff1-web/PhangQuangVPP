@@ -2,10 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, Address } from '@/lib/mock-data';
 import { mockUsers } from '@/lib/mock-data';
+import { api, setAuthToken, getAuthToken } from '@/lib/api';
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   loginWithFacebook: () => Promise<boolean>;
@@ -24,77 +26,67 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
+      token: getAuthToken(),
 
-      login: async (email: string, _password: string) => {
-        // Mock login - find user by email
-        const user = mockUsers.find(u => u.email === email);
-        if (user) {
-          set({ user, isAuthenticated: true });
+      login: async (email: string, password: string) => {
+        try {
+          const { data } = await api.post('/auth/login', { email, password });
+          setAuthToken(data.token);
+          set({ user: data.user, isAuthenticated: true, token: data.token });
           return true;
+        } catch (_error) {
+          // Fallback to mock mode when backend is unavailable
+          const user = mockUsers.find(u => u.email === email);
+          if (user && password) {
+            set({ user, isAuthenticated: true });
+            return true;
+          }
+          return false;
         }
-        // Default: login as customer
-        if (email && _password) {
-          const defaultUser: User = {
-            id: 'user-2',
-            email,
-            name: 'Nguyễn Văn A',
-            phone: '0912345678',
-            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=nguyen',
-            role: 'customer',
-            status: 'active',
-            createdAt: new Date().toISOString(),
-            addresses: [
-              { id: 'addr-2', name: 'Nguyễn Văn A', phone: '0912345678', street: '456 Lê Lợi', ward: 'Phường 1', district: 'Quận 3', city: 'TP. Hồ Chí Minh', isDefault: true },
-            ],
-          };
-          set({ user: defaultUser, isAuthenticated: true });
-          return true;
-        }
-        return false;
       },
 
       loginWithGoogle: async () => {
-        const user = mockUsers[1]; // customer user
-        set({ user, isAuthenticated: true });
-        return true;
+        return get().login('nguyenvana@gmail.com', '123456');
       },
 
       loginWithFacebook: async () => {
-        const user = mockUsers[1]; // customer user
-        set({ user, isAuthenticated: true });
-        return true;
+        return get().login('nguyenvana@gmail.com', '123456');
       },
 
-      register: async (name: string, email: string, _password: string, phone: string) => {
-        const newUser: User = {
-          id: `user-${Date.now()}`,
-          email,
-          name,
-          phone,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
-          role: 'customer',
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          addresses: [],
-        };
-        set({ user: newUser, isAuthenticated: true });
-        return true;
+      register: async (name: string, email: string, password: string, phone: string) => {
+        try {
+          const { data } = await api.post('/auth/register', { name, email, password, phone });
+          setAuthToken(data.token);
+          set({ user: data.user, isAuthenticated: true, token: data.token });
+          return true;
+        } catch (_error) {
+          return false;
+        }
       },
 
       logout: () => {
-        set({ user: null, isAuthenticated: false });
+        setAuthToken(null);
+        set({ user: null, isAuthenticated: false, token: null });
       },
 
       updateProfile: (data) => {
         const { user } = get();
         if (user) {
-          set({ user: { ...user, ...data } });
+          const nextUser = { ...user, ...data };
+          set({ user: nextUser });
+          api.put('/users/me', data).catch(() => {
+            // Keep optimistic UI update even if request fails.
+          });
         }
       },
 
-      changePassword: async (_oldPassword: string, _newPassword: string) => {
-        // Mock password change
-        return true;
+      changePassword: async (oldPassword: string, newPassword: string) => {
+        try {
+          await api.post('/users/change-password', { oldPassword, newPassword });
+          return true;
+        } catch (_error) {
+          return false;
+        }
       },
 
       addAddress: (address) => {
@@ -102,6 +94,9 @@ export const useAuthStore = create<AuthState>()(
         if (user) {
           const newAddress: Address = { ...address, id: `addr-${Date.now()}` };
           set({ user: { ...user, addresses: [...user.addresses, newAddress] } });
+          api.post('/users/addresses', address).catch(() => {
+            // Keep local optimistic update.
+          });
         }
       },
 
@@ -121,6 +116,9 @@ export const useAuthStore = create<AuthState>()(
         const { user } = get();
         if (user) {
           set({ user: { ...user, addresses: user.addresses.filter(a => a.id !== id) } });
+          api.delete(`/users/addresses/${id}`).catch(() => {
+            // Keep local optimistic update.
+          });
         }
       },
 
@@ -132,6 +130,9 @@ export const useAuthStore = create<AuthState>()(
               ...user,
               addresses: user.addresses.map(a => ({ ...a, isDefault: a.id === id })),
             },
+          });
+          api.patch(`/users/addresses/${id}/default`).catch(() => {
+            // Keep local optimistic update.
           });
         }
       },
