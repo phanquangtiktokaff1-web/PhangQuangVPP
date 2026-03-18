@@ -63,11 +63,9 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-white mb-4">Thanh toán</h3>
             <div className="flex flex-wrap gap-2 mb-6">
-              <div className="bg-white rounded px-3 py-1 text-xs font-semibold text-gray-800">COD</div>
-              <div className="bg-white rounded px-3 py-1 text-xs font-semibold text-gray-800">VNPay</div>
-              <div className="bg-white rounded px-3 py-1 text-xs font-semibold text-pink-600">MoMo</div>
-              <div className="bg-white rounded px-3 py-1 text-xs font-semibold text-blue-600">ZaloPay</div>
-              <div className="bg-white rounded px-3 py-1 text-xs font-semibold text-gray-800">Bank</div>
+              {[{label:'COD',color:'text-gray-800'},{label:'VNPay',color:'text-gray-800'},{label:'MoMo',color:'text-pink-600'},{label:'ZaloPay',color:'text-blue-600'},{label:'Bank',color:'text-gray-800'}].map(p => (
+                <div key={p.label} className={`bg-white rounded-md px-3 py-1.5 text-xs font-bold ${p.color} shadow-sm border border-gray-100`}>{p.label}</div>
+              ))}
             </div>
 
             <h3 className="font-semibold text-white mb-4">Kết nối với chúng tôi</h3>
@@ -85,7 +83,7 @@ export function Footer() {
 
       <div className="border-t border-gray-800">
         <div className="container mx-auto px-4 py-4 text-center text-sm text-gray-500">
-          © 2024 QuangVPP. Tất cả quyền được bảo lưu.
+        © 2025 QuangVPP. Tất cả quyền được bảo lưu.
         </div>
       </div>
     </footer>

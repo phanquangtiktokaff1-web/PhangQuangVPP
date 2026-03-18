@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useNavigate } from 'react-router';
 import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, BarChart2, Sparkles, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 
 export function ProductDetailPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const product = products.find(p => p.slug === slug);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -56,7 +57,7 @@ export function ProductDetailPage() {
 
   const handleBuyNow = () => {
     handleAddToCart();
-    window.location.href = '/cart';
+    navigate('/cart');
   };
 
   const ratingDistribution = [5, 4, 3, 2, 1].map(star => ({
@@ -190,13 +191,15 @@ export function ProductDetailPage() {
 
           {/* Wholesale pricing */}
           {product.wholesalePrice && product.wholesalePrice.length > 0 && (
-            <div className="mb-4 p-4 border rounded-lg bg-green-50">
-              <Label className="mb-2 block font-semibold flex items-center gap-1"><Building2 className="h-4 w-4" /> Giá sỉ</Label>
-              <div className="grid grid-cols-3 gap-2">
+            <div className="mb-4 p-3 border border-green-200 rounded-lg bg-green-50">
+              <div className="flex items-center gap-1.5 text-green-800 font-semibold text-sm mb-2">
+                <Building2 className="h-4 w-4" /> Giá mua sỉ
+              </div>
+              <div className="flex gap-2 flex-wrap">
                 {product.wholesalePrice.map((wp, i) => (
-                  <div key={i} className="text-center p-2 bg-white rounded border">
-                    <div className="text-xs text-muted-foreground">Từ {wp.minQty} cái</div>
-                    <div className="font-bold text-green-600">{formatPrice(wp.price)}</div>
+                  <div key={i} className="flex items-center gap-1.5 bg-white rounded-full px-3 py-1 border border-green-200 text-sm">
+                    <span className="text-muted-foreground">≥{wp.minQty} cái:</span>
+                    <span className="font-bold text-green-700">{formatPrice(wp.price)}</span>
                   </div>
                 ))}
               </div>
@@ -224,35 +227,39 @@ export function ProductDetailPage() {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 mb-6">
-            <Button size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
-              <ShoppingCart className="h-5 w-5" /> Thêm vào giỏ
-            </Button>
-            <Button size="lg" variant="secondary" className="flex-1" onClick={handleBuyNow}>
-              Mua ngay
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="gap-1"
-              onClick={() => {
-                if (inWishlist) { removeFromWishlist(product.id); toast.info('Đã xóa khỏi yêu thích'); }
-                else { addToWishlist(product.id); toast.success('Đã thêm vào yêu thích!'); }
-              }}
-            >
-              <Heart className={`h-5 w-5 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => {
-                const success = addToCompare(product.id);
-                if (success) toast.success('Đã thêm vào so sánh!');
-                else toast.error('Tối đa 3 sản phẩm so sánh');
-              }}
-            >
-              <BarChart2 className="h-5 w-5" />
-            </Button>
+          <div className="space-y-2 mb-6">
+            <div className="flex gap-2">
+              <Button size="lg" className="flex-1 gap-2" onClick={handleAddToCart}>
+                <ShoppingCart className="h-4 w-4" /> Thêm vào giỏ
+              </Button>
+              <Button size="lg" variant="secondary" className="flex-1" onClick={handleBuyNow}>
+                Mua ngay
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => {
+                  if (inWishlist) { removeFromWishlist(product.id); toast.info('Đã xóa khỏi yêu thích'); }
+                  else { addToWishlist(product.id); toast.success('Đã thêm vào yêu thích!'); }
+                }}
+              >
+                <Heart className={`h-4 w-4 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
+                {inWishlist ? 'Bỏ yêu thích' : 'Yêu thích'}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 gap-2"
+                onClick={() => {
+                  const success = addToCompare(product.id);
+                  if (success) toast.success('Đã thêm vào so sánh!');
+                  else toast.error('Tối đa 3 sản phẩm so sánh');
+                }}
+              >
+                <BarChart2 className="h-4 w-4" /> So sánh
+              </Button>
+            </div>
           </div>
 
           {/* Shipping info */}
