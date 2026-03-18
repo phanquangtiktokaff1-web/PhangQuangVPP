@@ -9,14 +9,14 @@ export function Footer() {
           {/* Company info */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-xl">VP</div>
+              <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-xl">Q</div>
               <div>
-                <div className="font-bold text-lg text-white">VP Shop</div>
+                <div className="font-bold text-lg text-white">QuangVPP</div>
                 <div className="text-xs text-gray-400">Văn phòng phẩm</div>
               </div>
             </div>
             <p className="text-sm mb-4">
-              VP Shop - Cung cấp văn phòng phẩm chất lượng cao với giá cả hợp lý. 
+              QuangVPP - Cung cấp văn phòng phẩm chất lượng cao với giá cả hợp lý. 
               Phục vụ cá nhân, doanh nghiệp và trường học trên toàn quốc.
             </p>
             <div className="space-y-2 text-sm">
@@ -37,7 +37,7 @@ export function Footer() {
 
           {/* Quick links */}
           <div>
-            <h3 className="font-semibold text-white mb-4">Về VP Shop</h3>
+            <h3 className="font-semibold text-white mb-4">Về QuangVPP</h3>
             <ul className="space-y-2 text-sm">
               <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Giới thiệu</Link></li>
               <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Tuyển dụng</Link></li>
@@ -85,7 +85,7 @@ export function Footer() {
 
       <div className="border-t border-gray-800">
         <div className="container mx-auto px-4 py-4 text-center text-sm text-gray-500">
-          © 2024 VP Shop. Tất cả quyền được bảo lưu.
+          © 2024 QuangVPP. Tất cả quyền được bảo lưu.
         </div>
       </div>
     </footer>

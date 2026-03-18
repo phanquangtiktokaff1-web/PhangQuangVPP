@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "VP Shop backend API (Express + SQL Server)",
+  "description": "QuangVPP backend API (Express + SQL Server)",
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",

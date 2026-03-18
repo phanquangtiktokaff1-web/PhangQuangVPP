@@ -95,9 +95,9 @@ export function Header() {
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-xl">VP</div>
+            <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-xl">Q</div>
             <div className="hidden sm:block">
-              <div className="font-bold text-lg text-foreground leading-tight">VP Shop</div>
+              <div className="font-bold text-lg text-foreground leading-tight">QuangVPP</div>
               <div className="text-xs text-muted-foreground">Văn phòng phẩm</div>
             </div>
           </Link>

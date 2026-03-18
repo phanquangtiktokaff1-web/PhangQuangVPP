@@ -34,10 +34,10 @@ export function AdminLayout() {
     <div className={`flex flex-col h-full ${mobile ? '' : ''}`}>
       {/* Logo */}
       <div className="p-4 border-b flex items-center gap-2">
-        <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-lg">VP</div>
+        <div className="bg-primary text-primary-foreground rounded-lg p-2 font-bold text-lg">Q</div>
         {(!collapsed || mobile) && (
           <div>
-            <div className="font-bold text-foreground">VP Shop</div>
+            <div className="font-bold text-foreground">QuangVPP</div>
             <div className="text-xs text-muted-foreground">Admin Panel</div>
           </div>
         )}
