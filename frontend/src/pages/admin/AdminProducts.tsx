@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 const emptyForm = {
   name: '', categoryId: '', brandId: '',
   price: '', originalPrice: '', stock: '',
-  description: '', isCustomizable: false, isFlashSale: false,
+  description: '', isCustomizable: false,
   colors: '',
 };
 
@@ -24,6 +24,7 @@ type FormState = typeof emptyForm;
 
 type ImgObj = { id: string; url: string; alt: string };
 type WholesaleRow = { id: string; minQty: string; price: string };
+type SpecRow = { id: string; key: string; value: string };
 
 /* ─── Image upload helper ─────────────────────────────────── */
 function ImageUploader({ images, onChange }: {
@@ -93,6 +94,7 @@ export function AdminProducts() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [images, setImages] = useState<{ id: string; url: string; alt: string }[]>([]);
   const [wholesaleRows, setWholesaleRows] = useState<WholesaleRow[]>([]);
+  const [specRows, setSpecRows] = useState<SpecRow[]>([]);
   const [saving, setSaving] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -130,6 +132,7 @@ export function AdminProducts() {
     setForm(emptyForm);
     setImages([]);
     setWholesaleRows([]);
+    setSpecRows([]);
     setShowDialog(true);
   };
 
@@ -139,7 +142,7 @@ export function AdminProducts() {
       name: p.name, categoryId: p.categoryId, brandId: p.brandId,
       price: String(p.price), originalPrice: String(p.originalPrice),
       stock: String(p.stock), description: p.description,
-      isCustomizable: p.isCustomizable, isFlashSale: p.isFlashSale,
+      isCustomizable: p.isCustomizable,
       colors: p.colors.join(', '),
     });
     setImages(p.images.map(img => ({ id: img.id, url: img.url, alt: img.alt })));
@@ -150,7 +153,26 @@ export function AdminProducts() {
         price: String(wp.price),
       }))
     );
+    setSpecRows(
+      Object.entries(p.specifications ?? {}).map(([key, value], idx) => ({
+        id: `sp-${p.id}-${idx}`,
+        key,
+        value: String(value),
+      }))
+    );
     setShowDialog(true);
+  };
+
+  const addSpecRow = () => {
+    setSpecRows(prev => [...prev, { id: `sp-${Date.now()}`, key: '', value: '' }]);
+  };
+
+  const removeSpecRow = (id: string) => {
+    setSpecRows(prev => prev.filter(row => row.id !== id));
+  };
+
+  const updateSpecRow = (id: string, field: 'key' | 'value', value: string) => {
+    setSpecRows(prev => prev.map(row => (row.id === id ? { ...row, [field]: value } : row)));
   };
 
   const addWholesaleRow = () => {
@@ -169,6 +191,22 @@ export function AdminProducts() {
     if (!form.name || !form.price) { toast.error('Vui lòng điền tên và giá sản phẩm'); return; }
     setSaving(true);
     try {
+      const parsedSpecs = specRows
+        .map(row => ({ key: row.key.trim(), value: row.value.trim() }))
+        .filter(row => row.key !== '' || row.value !== '');
+
+      const hasInvalidSpecs = parsedSpecs.some(row => !row.key || !row.value);
+      if (hasInvalidSpecs) {
+        toast.error('Thông số kỹ thuật chưa hợp lệ. Vui lòng nhập đủ tên và giá trị thông số.');
+        setSaving(false);
+        return;
+      }
+
+      const specifications = parsedSpecs.reduce<Record<string, string>>((acc, row) => {
+        acc[row.key] = row.value;
+        return acc;
+      }, {});
+
       const parsedWholesale = wholesaleRows
         .map(row => ({
           id: row.id,
@@ -200,8 +238,8 @@ export function AdminProducts() {
         originalPrice: Number(form.originalPrice) || Number(form.price),
         stock: Number(form.stock) || 0,
         description: form.description,
+        specifications,
         isCustomizable: form.isCustomizable,
-        isFlashSale: form.isFlashSale,
         wholesalePrice,
         colors: form.colors ? form.colors.split(',').map(c => c.trim()).filter(Boolean) : [],
         images,
@@ -296,7 +334,6 @@ export function AdminProducts() {
                         <div className="flex gap-1 justify-center">
                           {product.isCustomizable && <Badge variant="secondary" className="text-xs">Tùy chỉnh</Badge>}
                           {product.wholesalePrice && product.wholesalePrice.length > 0 && <Badge variant="secondary" className="text-xs">Sỉ</Badge>}
-                          {product.isFlashSale && <Badge className="text-xs bg-red-500">Sale</Badge>}
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
@@ -322,60 +359,95 @@ export function AdminProducts() {
 
       {/* Product Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="!w-[96vw] !max-w-[96vw] 2xl:!max-w-[1400px] max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {/* Basics */}
-            <div className="space-y-2">
-              <Label>Tên sản phẩm *</Label>
-              <Input value={form.name} onChange={e => f('name', e.target.value)} placeholder="Nhập tên sản phẩm" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Danh mục</Label>
-                <Select value={form.categoryId} onValueChange={v => f('categoryId', v)}>
-                  <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
-                  <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                </Select>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Tên sản phẩm *</Label>
+                  <Input value={form.name} onChange={e => f('name', e.target.value)} placeholder="Nhập tên sản phẩm" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2"><Label>Danh mục</Label>
+                    <Select value={form.categoryId} onValueChange={v => f('categoryId', v)}>
+                      <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
+                      <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2"><Label>Thương hiệu</Label>
+                    <Select value={form.brandId} onValueChange={v => f('brandId', v)}>
+                      <SelectTrigger><SelectValue placeholder="Chọn thương hiệu" /></SelectTrigger>
+                      <SelectContent>{brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2"><Label>Giá bán *</Label><Input type="number" value={form.price} onChange={e => f('price', e.target.value)} placeholder="0" /></div>
+                  <div className="space-y-2"><Label>Giá gốc</Label><Input type="number" value={form.originalPrice} onChange={e => f('originalPrice', e.target.value)} placeholder="0" /></div>
+                  <div className="space-y-2"><Label>Tồn kho</Label><Input type="number" value={form.stock} onChange={e => f('stock', e.target.value)} placeholder="0" /></div>
+                </div>
+                <div className="space-y-2"><Label>Màu sắc (phân cách bằng dấu phẩy)</Label>
+                  <Input value={form.colors} onChange={e => f('colors', e.target.value)} placeholder="Đen, Trắng, Xanh..." />
+                </div>
+                <div className="space-y-2"><Label>Mô tả</Label>
+                  <Textarea value={form.description} onChange={e => f('description', e.target.value)} rows={4} />
+                </div>
               </div>
-              <div className="space-y-2"><Label>Thương hiệu</Label>
-                <Select value={form.brandId} onValueChange={v => f('brandId', v)}>
-                  <SelectTrigger><SelectValue placeholder="Chọn thương hiệu" /></SelectTrigger>
-                  <SelectContent>{brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
-                </Select>
+
+              <div className="space-y-4">
+                {/* Images */}
+                <div className="space-y-2">
+                  <Label>Hình ảnh sản phẩm</Label>
+                  <ImageUploader images={images} onChange={setImages} />
+                </div>
+
+                {/* Specifications */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Thông số kỹ thuật</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={addSpecRow}>
+                      <Plus className="h-4 w-4 mr-1" /> Thêm thông số
+                    </Button>
+                  </div>
+
+                  {specRows.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Chưa có thông số. Ví dụ: Thương hiệu, Chất liệu, Kích thước...</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {specRows.map(row => (
+                        <div key={row.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                          <Input
+                            placeholder="Tên thông số"
+                            value={row.key}
+                            onChange={e => updateSpecRow(row.id, 'key', e.target.value)}
+                          />
+                          <Input
+                            placeholder="Giá trị"
+                            value={row.value}
+                            onChange={e => updateSpecRow(row.id, 'value', e.target.value)}
+                          />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeSpecRow(row.id)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Giá bán *</Label><Input type="number" value={form.price} onChange={e => f('price', e.target.value)} placeholder="0" /></div>
-              <div className="space-y-2"><Label>Giá gốc</Label><Input type="number" value={form.originalPrice} onChange={e => f('originalPrice', e.target.value)} placeholder="0" /></div>
-              <div className="space-y-2"><Label>Tồn kho</Label><Input type="number" value={form.stock} onChange={e => f('stock', e.target.value)} placeholder="0" /></div>
-            </div>
-            <div className="space-y-2"><Label>Màu sắc (phân cách bằng dấu phẩy)</Label>
-              <Input value={form.colors} onChange={e => f('colors', e.target.value)} placeholder="Đen, Trắng, Xanh..." />
-            </div>
-            <div className="space-y-2"><Label>Mô tả</Label>
-              <Textarea value={form.description} onChange={e => f('description', e.target.value)} rows={3} />
-            </div>
-            {/* Images */}
-            <div className="space-y-2">
-              <Label>Hình ảnh sản phẩm</Label>
-              <ImageUploader images={images} onChange={setImages} />
-            </div>
+
             {/* Flags */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="flex items-center gap-3 p-3 rounded-lg border">
                 <Switch checked={form.isCustomizable} onCheckedChange={v => f('isCustomizable', v)} id="customizable" />
                 <Label htmlFor="customizable" className="cursor-pointer">
                   <div className="font-medium text-sm">Có thể tùy chỉnh</div>
                   <div className="text-xs text-muted-foreground">In tên, logo...</div>
-                </Label>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border">
-                <Switch checked={form.isFlashSale} onCheckedChange={v => f('isFlashSale', v)} id="flashsale" />
-                <Label htmlFor="flashsale" className="cursor-pointer">
-                  <div className="font-medium text-sm">Flash Sale</div>
-                  <div className="text-xs text-muted-foreground">Hiển thị trang flash sale</div>
                 </Label>
               </div>
             </div>

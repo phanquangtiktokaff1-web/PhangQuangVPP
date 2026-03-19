@@ -286,16 +286,20 @@ export function ProductDetailPage() {
         <TabsContent value="specs" className="mt-4">
           <Card>
             <CardContent className="p-6">
-              <table className="w-full">
-                <tbody>
-                  {Object.entries(product.specifications).map(([key, value], i) => (
-                    <tr key={key} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
-                      <td className="py-2 px-4 font-medium text-muted-foreground w-1/3">{key}</td>
-                      <td className="py-2 px-4">{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {Object.keys(product.specifications || {}).length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sản phẩm chưa có thông số kỹ thuật.</p>
+              ) : (
+                <table className="w-full">
+                  <tbody>
+                    {Object.entries(product.specifications).map(([key, value], i) => (
+                      <tr key={key} className={i % 2 === 0 ? 'bg-gray-50' : ''}>
+                        <td className="py-2 px-4 font-medium text-muted-foreground w-1/3">{key}</td>
+                        <td className="py-2 px-4">{value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
