@@ -22,6 +22,7 @@ export function ProductDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [reviews, setReviews] = useState<Product['reviews']>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -40,13 +41,22 @@ export function ProductDetailPage() {
     if (!slug) return;
     setLoading(true);
     catalogApi.getProduct(slug)
-      .then(p => {
+      .then(async p => {
         setProduct(p);
-        // Fetch related products in same category
-        return catalogApi.getProducts({ categoryId: p.categoryId, limit: 4 });
+
+        const [related, productReviews] = await Promise.all([
+          catalogApi.getProducts({ categoryId: p.categoryId, limit: 4 }),
+          catalogApi.getReviews(p.id).catch(() => p.reviews ?? []),
+        ]);
+
+        setReviews(productReviews);
+        return related.filter(r => r.id !== p.id).slice(0, 4);
       })
-      .then(related => setRelatedProducts(related.filter(r => r.id !== product?.id).slice(0, 4)))
-      .catch(() => setProduct(null))
+      .then(setRelatedProducts)
+      .catch(() => {
+        setProduct(null);
+        setReviews([]);
+      })
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
@@ -80,11 +90,38 @@ export function ProductDetailPage() {
     navigate('/cart');
   };
 
+  const handleSubmitReview = async () => {
+    if (!reviewComment.trim()) {
+      toast.error('Vui lòng nhập nội dung đánh giá');
+      return;
+    }
+
+    try {
+      await catalogApi.submitReview(product.id, {
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      });
+
+      const [latestProduct, latestReviews] = await Promise.all([
+        catalogApi.getProduct(product.slug),
+        catalogApi.getReviews(product.id),
+      ]);
+
+      setProduct(latestProduct);
+      setReviews(latestReviews);
+      setReviewComment('');
+      toast.success('Đã gửi đánh giá!');
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(message || 'Không gửi được đánh giá, vui lòng thử lại');
+    }
+  };
+
   const ratingDistribution = [5, 4, 3, 2, 1].map(star => ({
     star,
-    count: product.reviews.filter(r => r.rating === star).length,
-    percentage: product.reviews.length > 0
-      ? (product.reviews.filter(r => r.rating === star).length / product.reviews.length) * 100
+    count: reviews.filter(r => r.rating === star).length,
+    percentage: reviews.length > 0
+      ? (reviews.filter(r => r.rating === star).length / reviews.length) * 100
       : 0,
   }));
 
@@ -316,7 +353,7 @@ export function ProductDetailPage() {
                       <Star key={star} className={`h-4 w-4 ${star <= product.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
                     ))}
                   </div>
-                  <div className="text-sm text-muted-foreground">{product.reviewCount} đánh giá</div>
+                  <div className="text-sm text-muted-foreground">{product.reviewCount || reviews.length} đánh giá</div>
                 </div>
                 <div className="flex-1 space-y-1">
                   {ratingDistribution.map(({ star, count, percentage }) => (
@@ -349,7 +386,7 @@ export function ProductDetailPage() {
                     onChange={(e) => setReviewComment(e.target.value)}
                     className="mb-3"
                   />
-                  <Button onClick={() => { toast.success('Đã gửi đánh giá!'); setReviewComment(''); }}>
+                  <Button onClick={() => void handleSubmitReview()}>
                     Gửi đánh giá
                   </Button>
                 </div>
@@ -357,7 +394,7 @@ export function ProductDetailPage() {
 
               {/* Reviews list */}
               <div className="space-y-4">
-                {product.reviews.map(review => (
+                {reviews.map(review => (
                   <div key={review.id} className="border-b pb-4">
                     <div className="flex items-center gap-3 mb-2">
                       <img src={review.userAvatar} alt={review.userName} className="h-8 w-8 rounded-full" />
@@ -381,6 +418,9 @@ export function ProductDetailPage() {
                     </div>
                   </div>
                 ))}
+                {reviews.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Chưa có đánh giá nào cho sản phẩm này.</p>
+                )}
               </div>
             </CardContent>
           </Card>
