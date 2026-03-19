@@ -8,7 +8,24 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { chatApi, type ChatMessage, type ChatConversation } from '@/lib/api-service';
 import { getSocket } from '@/lib/socket';
 import { useAuthStore } from '@/store/auth-store';
-import { formatPrice as _fp } from '@/lib/api-service';
+
+const quoteTagMap: Record<string, { label: string; className: string }> = {
+  '[YEU_CAU_BAO_GIA_MUA_SI]': { label: 'Báo giá mua sỉ', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+  '[YEU_CAU_BAO_GIA_TUY_CHINH]': { label: 'Báo giá tùy chỉnh', className: 'bg-purple-100 text-purple-800 border-purple-200' },
+};
+
+function parseTaggedMessage(raw: string) {
+  const lines = raw.split('\n');
+  const firstLine = lines[0]?.trim();
+  const tagConfig = firstLine ? quoteTagMap[firstLine] : undefined;
+  if (!tagConfig) {
+    return { tag: null, body: raw };
+  }
+  return {
+    tag: { key: firstLine, ...tagConfig },
+    body: lines.slice(1).join('\n').trim(),
+  };
+}
 
 function timeAgo(isoStr: string): string {
   const diff = (Date.now() - new Date(isoStr).getTime()) / 1000;
@@ -149,6 +166,9 @@ export function AdminChat() {
           ) : (
             <div className="divide-y">
               {filteredConvs.map(conv => (
+                (() => {
+                  const parsed = parseTaggedMessage(conv.lastMessage || '');
+                  return (
                 <button
                   key={conv.userId}
                   className={`w-full text-left p-3 hover:bg-accent transition-colors flex gap-3 items-start ${selectedUserId === conv.userId ? 'bg-accent' : ''}`}
@@ -163,12 +183,21 @@ export function AdminChat() {
                       <span className="font-medium text-sm truncate">{conv.userName}</span>
                       <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo(conv.lastMessageAt)}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.lastMessage}</p>
+                    {parsed.tag ? (
+                      <div className="mt-0.5 space-y-1">
+                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${parsed.tag.className}`}>{parsed.tag.label}</Badge>
+                        <p className="text-xs text-muted-foreground truncate">{parsed.body || 'Yêu cầu báo giá mới'}</p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{conv.lastMessage}</p>
+                    )}
                   </div>
                   {conv.unreadCount > 0 && (
                     <Badge className="ml-1 h-5 min-w-5 px-1 text-xs rounded-full shrink-0">{conv.unreadCount}</Badge>
                   )}
                 </button>
+                  );
+                })()
               ))}
             </div>
           )}
@@ -207,6 +236,7 @@ export function AdminChat() {
               ) : (
                 messages.map(msg => {
                   const isAdmin = msg.senderRole === 'admin';
+                  const parsed = parseTaggedMessage(msg.message);
                   return (
                     <div key={msg.id} className={`flex gap-2 ${isAdmin ? 'justify-end' : 'justify-start'}`}>
                       {!isAdmin && (
@@ -218,7 +248,12 @@ export function AdminChat() {
                       <div className={`max-w-[60%] ${isAdmin ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
                         {!isAdmin && <span className="text-xs text-muted-foreground px-1">{msg.senderName}</span>}
                         <div className={`rounded-2xl px-3 py-2 text-sm ${isAdmin ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-background border rounded-bl-sm'}`}>
-                          {msg.message}
+                          {parsed.tag && (
+                            <Badge variant="outline" className={`mb-1 text-[10px] py-0 px-1.5 ${parsed.tag.className}`}>
+                              {parsed.tag.label}
+                            </Badge>
+                          )}
+                          <div className="whitespace-pre-wrap break-words">{parsed.body || msg.message}</div>
                         </div>
                         <span className="text-[10px] text-muted-foreground px-1">
                           {new Date(msg.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}

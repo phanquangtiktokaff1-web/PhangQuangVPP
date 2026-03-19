@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +19,9 @@ export function RegisterPage() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { register } = useAuthStore();
+  const redirect = new URLSearchParams(location.search).get('redirect');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +42,7 @@ export function RegisterPage() {
     setLoading(false);
     if (success) {
       toast.success('Đăng ký thành công!');
-      navigate('/');
+      navigate(redirect || '/');
     }
   };
 
@@ -158,7 +160,7 @@ export function RegisterPage() {
 
           <div className="mt-6 text-center text-sm">
             Đã có tài khoản?{' '}
-            <Link to="/login" className="text-primary font-medium hover:underline">
+            <Link to={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'} className="text-primary font-medium hover:underline">
               Đăng nhập
             </Link>
           </div>

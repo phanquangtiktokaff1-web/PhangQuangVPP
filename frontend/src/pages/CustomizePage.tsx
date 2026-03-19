@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, ShoppingCart } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { catalogApi, formatPrice, type Product } from '@/lib/api-service';
+import { catalogApi, chatApi, formatPrice, type Product } from '@/lib/api-service';
 import { useCartStore } from '@/store/cart-store';
+import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
 
 export function CustomizePage() {
+  const navigate = useNavigate();
   const [customizableProducts, setCustomizableProducts] = useState<Product[]>([]);
   useEffect(() => { catalogApi.getProducts({ isCustomizable: true }).then(setCustomizableProducts).catch(() => {}); }, []);
 
@@ -22,8 +25,10 @@ export function CustomizePage() {
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactNote, setContactNote] = useState('');
+  const [sendingQuote, setSendingQuote] = useState(false);
 
   const addItem = useCartStore(s => s.addItem);
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     setCustomType('');
@@ -44,12 +49,37 @@ export function CustomizePage() {
     toast.success('Đã thêm sản phẩm tùy chỉnh vào giỏ hàng');
   };
 
-  const handleRequestQuote = () => {
+  const handleRequestQuote = async () => {
     if (!contactName || !contactPhone) {
       toast.error('Vui lòng nhập thông tin liên hệ');
       return;
     }
-    toast.success('Yêu cầu báo giá đã được gửi! Chúng tôi sẽ liên hệ bạn sớm.');
+
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để gửi yêu cầu báo giá');
+      return;
+    }
+
+    setSendingQuote(true);
+    try {
+      const selectedProductName = customizableProducts.find(p => p.id === selectedProduct)?.name || 'Chua chon';
+      const messageLines = [
+        '[YEU_CAU_BAO_GIA_TUY_CHINH]',
+        `Nguoi lien he: ${contactName}`,
+        `So dien thoai: ${contactPhone}`,
+        `San pham quan tam: ${selectedProductName}`,
+        `Loai tuy chinh: ${customType || 'Chua chon'}`,
+        `Noi dung tuy chinh: ${customText || 'Chua nhap'}`,
+        `So luong du kien: ${quantity}`,
+        `Yeu cau: ${contactNote || 'Khong co'}`,
+      ];
+      await chatApi.sendMessage(messageLines.join('\n'));
+      toast.success('Đã gửi yêu cầu báo giá đến bộ phận kinh doanh');
+    } catch {
+      toast.error('Không gửi được yêu cầu báo giá. Vui lòng thử lại.');
+    } finally {
+      setSendingQuote(false);
+    }
   };
 
   return (
@@ -174,9 +204,22 @@ export function CustomizePage() {
                     <Input placeholder="Họ tên" value={contactName} onChange={(e) => setContactName(e.target.value)} />
                     <Input placeholder="Số điện thoại" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
                     <Textarea placeholder="Mô tả yêu cầu..." value={contactNote} onChange={(e) => setContactNote(e.target.value)} />
-                    <Button variant="outline" className="w-full" onClick={handleRequestQuote}>
-                      Gửi yêu cầu báo giá
+                    <Button variant="outline" className="w-full" onClick={() => void handleRequestQuote()} disabled={sendingQuote}>
+                      {sendingQuote ? 'Đang gửi...' : 'Gửi yêu cầu báo giá'}
                     </Button>
+                    {!isAuthenticated && (
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Bạn cần đăng nhập để gửi yêu cầu và nhận phản hồi qua chat.</p>
+                        <Button
+                          type="button"
+                          variant="link"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => navigate('/login?redirect=%2Fcustomize')}
+                        >
+                          Đăng nhập ngay
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

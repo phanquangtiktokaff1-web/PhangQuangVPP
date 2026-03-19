@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Building2, Calculator, Send, CheckCircle, BadgePercent, Truck, FileText, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,10 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { catalogApi, formatPrice, type Product } from '@/lib/api-service';
+import { catalogApi, chatApi, formatPrice, type Product } from '@/lib/api-service';
+import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
 
 export function WholesalePage() {
+  const navigate = useNavigate();
   const [wholesaleProducts, setWholesaleProducts] = useState<Product[]>([]);
   useEffect(() => { catalogApi.getProducts({ hasWholesale: true }).then(setWholesaleProducts).catch(() => {}); }, []);
 
@@ -23,6 +26,8 @@ export function WholesalePage() {
   const [contactEmail, setContactEmail] = useState('');
   const [note, setNote] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const { isAuthenticated } = useAuthStore();
 
   const selectedProductData = wholesaleProducts.find(p => p.id === selectedProduct);
   const applicablePrice = selectedProductData?.wholesalePrice?.reduce((best, wp) => {
@@ -30,13 +35,38 @@ export function WholesalePage() {
     return best;
   }, null as { minQty: number; price: number } | null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!companyName || !contactName || !contactPhone) {
       toast.error('Vui lòng nhập đầy đủ thông tin');
       return;
     }
-    setSubmitted(true);
-    toast.success('Yêu cầu báo giá đã được gửi thành công!');
+
+    if (!isAuthenticated) {
+      toast.error('Vui lòng đăng nhập để gửi yêu cầu báo giá');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const messageLines = [
+        '[YEU_CAU_BAO_GIA_MUA_SI]',
+        `Cong ty: ${companyName}`,
+        `Nguoi lien he: ${contactName}`,
+        `So dien thoai: ${contactPhone}`,
+        `Email: ${contactEmail || 'Khong cung cap'}`,
+        `San pham quan tam: ${selectedProductData?.name || 'Chua chon'}`,
+        `So luong du kien: ${quantity}`,
+        `Yeu cau: ${note || 'Khong co'}`,
+      ];
+      await chatApi.sendMessage(messageLines.join('\n'));
+
+      setSubmitted(true);
+      toast.success('Đã gửi yêu cầu báo giá đến bộ phận kinh doanh');
+    } catch {
+      toast.error('Không gửi được yêu cầu báo giá. Vui lòng thử lại.');
+    } finally {
+      setSending(false);
+    }
   };
 
   if (submitted) {
@@ -212,9 +242,22 @@ export function WholesalePage() {
                   <Label>Ghi chú / Yêu cầu đặc biệt</Label>
                   <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="VD: Cần in logo, xuất hóa đơn VAT..." />
                 </div>
-                <Button className="w-full" size="lg" onClick={handleSubmit}>
-                  <Send className="h-4 w-4 mr-2" /> Gửi yêu cầu báo giá
+                <Button className="w-full" size="lg" onClick={() => void handleSubmit()} disabled={sending}>
+                  <Send className="h-4 w-4 mr-2" /> {sending ? 'Đang gửi...' : 'Gửi yêu cầu báo giá'}
                 </Button>
+                {!isAuthenticated && (
+                  <div className="text-center space-y-1">
+                    <p className="text-xs text-muted-foreground">Bạn cần đăng nhập để gửi yêu cầu và theo dõi phản hồi trong chat.</p>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => navigate('/login?redirect=%2Fwholesale')}
+                    >
+                      Đăng nhập ngay
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

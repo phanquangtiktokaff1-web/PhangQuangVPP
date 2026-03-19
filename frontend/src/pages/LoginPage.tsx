@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,9 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loginWithGoogle, loginWithFacebook } = useAuthStore();
+  const redirect = new URLSearchParams(location.search).get('redirect');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +34,7 @@ export function LoginPage() {
       if (email === 'admin@vpshop.vn') {
         navigate('/admin');
       } else {
-        navigate('/');
+        navigate(redirect || '/');
       }
     } else {
       toast.error('Email hoặc mật khẩu không đúng');
@@ -44,7 +46,7 @@ export function LoginPage() {
     await loginWithGoogle();
     setLoading(false);
     toast.success('Đăng nhập bằng Google thành công!');
-    navigate('/');
+    navigate(redirect || '/');
   };
 
   const handleFacebookLogin = async () => {
@@ -52,7 +54,7 @@ export function LoginPage() {
     await loginWithFacebook();
     setLoading(false);
     toast.success('Đăng nhập bằng Facebook thành công!');
-    navigate('/');
+    navigate(redirect || '/');
   };
 
   return (
@@ -144,7 +146,7 @@ export function LoginPage() {
 
           <div className="mt-6 text-center text-sm">
             Chưa có tài khoản?{' '}
-            <Link to="/register" className="text-primary font-medium hover:underline">
+            <Link to={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'} className="text-primary font-medium hover:underline">
               Đăng ký ngay
             </Link>
           </div>
