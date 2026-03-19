@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { api, setAuthToken, getAuthToken } from '@/lib/api';
+import { connectSocket, disconnectSocket } from '@/lib/socket';
 import type { User, Address } from '@/lib/api-service';
 
 interface AuthState {
@@ -32,6 +33,7 @@ export const useAuthStore = create<AuthState>()(
           const { data } = await api.post('/auth/login', { email, password });
           setAuthToken(data.token);
           set({ user: data.user, isAuthenticated: true, token: data.token });
+          connectSocket(data.token);
           return true;
         } catch {
           return false;
@@ -51,6 +53,7 @@ export const useAuthStore = create<AuthState>()(
           const { data } = await api.post('/auth/register', { name, email, password, phone });
           setAuthToken(data.token);
           set({ user: data.user, isAuthenticated: true, token: data.token });
+          connectSocket(data.token);
           return true;
         } catch (_error) {
           return false;
@@ -58,6 +61,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        disconnectSocket();
         setAuthToken(null);
         set({ user: null, isAuthenticated: false, token: null });
       },

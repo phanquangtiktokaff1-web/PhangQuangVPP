@@ -13,6 +13,7 @@ import { useCartStore } from '@/store/cart-store';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice } from '@/lib/api-service';
 import type { PaymentMethod, ShippingMethod } from '@/lib/api-service';
+import { orderApi } from '@/lib/api-service';
 import { toast } from 'sonner';
 
 export function CheckoutPage() {
@@ -25,7 +26,8 @@ export function CheckoutPage() {
   } = useCartStore();
 
   const [orderPlaced, setOrderPlaced] = useState(false);
-  const [orderId] = useState(() => `ORD-${Date.now().toString().slice(-6)}`);
+  const [orderId, setOrderId] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   // Address defaults from user profile
   const defaultAddr = user?.addresses?.[0];
@@ -43,14 +45,35 @@ export function CheckoutPage() {
     return null;
   }
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!addrName || !addrPhone || !addrStreet || !addrCity) {
       toast.error('Vui lòng nhập đầy đủ địa chỉ giao hàng');
       return;
     }
-    setOrderPlaced(true);
-    clearCart();
-    toast.success('Đặt hàng thành công!');
+    setSubmitting(true);
+    try {
+      const orderData = {
+        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price ?? i.product?.price ?? 0, customization: i.customization })),
+        shippingAddress: { name: addrName, phone: addrPhone, street: addrStreet, ward: addrWard, district: addrDistrict, city: addrCity },
+        paymentMethod,
+        shippingMethod,
+        voucherCode: voucherCode || undefined,
+        note: note || undefined,
+        subtotal: getSubtotal(),
+        shippingFee: getShippingFee(),
+        discount: voucherDiscount,
+        total: getTotal(),
+      };
+      const result = await orderApi.createOrder(orderData);
+      setOrderId(result.id || `ORD-${Date.now().toString().slice(-6)}`);
+      setOrderPlaced(true);
+      clearCart();
+      toast.success('Đặt hàng thành công!');
+    } catch {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (orderPlaced) {
@@ -289,8 +312,8 @@ export function CheckoutPage() {
                 <span className="text-red-600">{formatPrice(getTotal())}</span>
               </div>
 
-              <Button className="w-full" size="lg" onClick={handlePlaceOrder}>
-                Đặt hàng
+              <Button className="w-full" size="lg" onClick={() => void handlePlaceOrder()} disabled={submitting}>
+                {submitting ? 'Đang xử lý...' : 'Đặt hàng'}
               </Button>
 
               <p className="text-xs text-center text-muted-foreground">

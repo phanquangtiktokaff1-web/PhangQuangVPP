@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router';
-import { Package, Eye, RotateCcw, CheckCircle, Clock, Truck, XCircle, AlertTriangle, Sparkles } from 'lucide-react';
+import { Package, Eye, RotateCcw, CheckCircle, Clock, Truck, XCircle, AlertTriangle, Sparkles, X, MapPin, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { orderApi, formatPrice, type Order, type OrderStatus } from '@/lib/api-service';
 import { toast } from 'sonner';
 
@@ -23,17 +23,137 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: Re
 };
 
 const paymentMethodLabels: Record<string, string> = {
-  cod: 'COD',
+  cod: 'COD (Tiền mặt)',
   bank_transfer: 'Chuyển khoản',
   momo: 'MoMo',
   zalopay: 'ZaloPay',
   vnpay: 'VNPay',
 };
 
+function OrderDetail({ order, onClose }: { order: Order; onClose: () => void }) {
+  const status = statusConfig[order.status];
+  return (
+    <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogHeader>
+        <div className="flex items-center justify-between">
+          <DialogTitle className="text-base">Chi tiết đơn hàng #{order.id}</DialogTitle>
+          <Badge className={status.color}>{status.label}</Badge>
+        </div>
+      </DialogHeader>
+      <ScrollArea className="max-h-[70vh] pr-2">
+        <div className="space-y-5">
+          {/* Timeline */}
+          <div>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Clock className="h-4 w-4" /> Trạng thái đơn hàng</h3>
+            <div className="flex items-start gap-1 overflow-x-auto pb-2">
+              {order.timeline.map((event, i) => {
+                const es = statusConfig[event.status as OrderStatus];
+                const isLast = i === order.timeline.length - 1;
+                return (
+                  <div key={i} className="flex items-center gap-1 shrink-0">
+                    <div className={`flex flex-col items-center gap-1`}>
+                      <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold ${isLast ? 'bg-primary text-primary-foreground' : 'bg-green-100 text-green-700'}`}>
+                        {i + 1}
+                      </div>
+                      <div className="text-xs text-center max-w-[70px]">
+                        <div className={`font-medium ${isLast ? 'text-primary' : 'text-foreground'}`}>{es?.label || event.status}</div>
+                        <div className="text-muted-foreground">{new Date(event.date).toLocaleDateString('vi-VN')}</div>
+                      </div>
+                    </div>
+                    {!isLast && <div className="w-8 h-0.5 bg-green-300 mb-5" />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Items */}
+          <div>
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Package className="h-4 w-4" /> Sản phẩm ({order.items.length})</h3>
+            <div className="space-y-3">
+              {order.items.map((item, i) => (
+                <div key={i} className="flex gap-3 items-center">
+                  {item.productImage ? (
+                    <img src={item.productImage} alt={item.productName} className="w-14 h-14 object-cover rounded-lg border" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg border bg-muted flex items-center justify-center">
+                      <Package className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{item.productName}</div>
+                    {item.customization && (
+                      <div className="text-xs text-purple-600 flex items-center gap-1 mt-0.5">
+                        <Sparkles className="h-3 w-3" /> {item.customization.type}: {item.customization.text}
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground">x{item.quantity} × {formatPrice(item.price)}</div>
+                  </div>
+                  <div className="text-sm font-semibold">{formatPrice(item.price * item.quantity)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Shipping Address */}
+          <div>
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><MapPin className="h-4 w-4" /> Địa chỉ giao hàng</h3>
+            <div className="text-sm bg-muted/30 rounded-lg p-3">
+              <div className="font-medium">{order.shippingAddress.name} — {order.shippingAddress.phone}</div>
+              <div className="text-muted-foreground mt-1">
+                {order.shippingAddress.street}{order.shippingAddress.ward ? `, ${order.shippingAddress.ward}` : ''}{order.shippingAddress.district ? `, ${order.shippingAddress.district}` : ''}, {order.shippingAddress.city}
+              </div>
+            </div>
+          </div>
+
+          {/* Payment & Total */}
+          <div>
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><CreditCard className="h-4 w-4" /> Thanh toán</h3>
+            <div className="space-y-1.5 text-sm bg-muted/30 rounded-lg p-3">
+              <div className="flex justify-between"><span className="text-muted-foreground">Phương thức</span><span>{paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tạm tính</span><span>{formatPrice(order.subtotal)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Phí vận chuyển</span><span>{formatPrice(order.shippingFee)}</span></div>
+              {order.discount > 0 && <div className="flex justify-between text-green-600"><span>Giảm giá</span><span>-{formatPrice(order.discount)}</span></div>}
+              <Separator className="my-1" />
+              <div className="flex justify-between font-bold text-base"><span>Tổng cộng</span><span className="text-red-600">{formatPrice(order.total)}</span></div>
+            </div>
+          </div>
+
+          {/* Return Request */}
+          {order.returnRequest && (
+            <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <span className="font-medium text-sm">Yêu cầu hoàn hàng</span>
+                <Badge className={order.returnRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : order.returnRequest.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                  {order.returnRequest.status === 'pending' ? 'Đang xử lý' : order.returnRequest.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">{order.returnRequest.reason}</p>
+            </div>
+          )}
+
+          {order.note && (
+            <div className="text-sm"><span className="font-medium">Ghi chú:</span> {order.note}</div>
+          )}
+        </div>
+      </ScrollArea>
+      <div className="flex justify-end gap-2 pt-2 border-t">
+        <Button variant="outline" onClick={onClose}><X className="h-4 w-4 mr-1" /> Đóng</Button>
+      </div>
+    </DialogContent>
+  );
+}
+
 export function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedTab, setSelectedTab] = useState('all');
   const [returnReason, setReturnReason] = useState('');
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     orderApi.getMyOrders().then(setOrders).catch(() => toast.error('Không tải được đơn hàng'));
@@ -80,9 +200,9 @@ export function OrdersPage() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <CardTitle className="text-base">{order.id}</CardTitle>
+                          <CardTitle className="text-base">#{order.id}</CardTitle>
                           <Badge className={status.color}>{status.label}</Badge>
-                          <Badge variant="outline">{paymentMethodLabels[order.paymentMethod]}</Badge>
+                          <Badge variant="outline">{paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod}</Badge>
                         </div>
                         <span className="text-sm text-muted-foreground">
                           {new Date(order.createdAt).toLocaleDateString('vi-VN')}
@@ -90,45 +210,35 @@ export function OrdersPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {/* Items */}
-                      <div className="space-y-3 mb-4">
-                        {order.items.map((item, i) => (
-                          <div key={i} className="flex gap-3">
-                            <img src={item.productImage} alt={item.productName} className="w-16 h-16 object-cover rounded" />
+                      {/* Items preview */}
+                      <div className="space-y-2 mb-4">
+                        {order.items.slice(0, 2).map((item, i) => (
+                          <div key={i} className="flex gap-3 items-center">
+                            {item.productImage ? (
+                              <img src={item.productImage} alt={item.productName} className="w-12 h-12 object-cover rounded" />
+                            ) : (
+                              <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
+                                <Package className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
                             <div className="flex-1">
                               <div className="font-medium text-sm">{item.productName}</div>
                               {item.customization && (
-                                <div className="text-xs text-purple-600 flex items-center gap-1"><Sparkles className="h-3 w-3" /> {item.customization.type}: {item.customization.text}</div>
+                                <div className="text-xs text-purple-600 flex items-center gap-1">
+                                  <Sparkles className="h-3 w-3" /> {item.customization.type}: {item.customization.text}
+                                </div>
                               )}
                               <div className="text-sm text-muted-foreground">x{item.quantity}</div>
                             </div>
                             <div className="text-sm font-medium">{formatPrice(item.price * item.quantity)}</div>
                           </div>
                         ))}
+                        {order.items.length > 2 && (
+                          <p className="text-xs text-muted-foreground pl-15">+{order.items.length - 2} sản phẩm khác</p>
+                        )}
                       </div>
 
                       <Separator className="mb-4" />
-
-                      {/* Timeline */}
-                      <div className="mb-4">
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-                          {order.timeline.map((event, i) => {
-                            const eventStatus = statusConfig[event.status as OrderStatus];
-                            return (
-                              <div key={i} className="flex items-center gap-1 shrink-0">
-                                <div className={`h-6 w-6 rounded-full flex items-center justify-center ${i === order.timeline.length - 1 ? 'bg-primary text-primary-foreground' : 'bg-green-100 text-green-600'}`}>
-                                  <CheckCircle className="h-3 w-3" />
-                                </div>
-                                <div className="text-xs">
-                                  <div className="font-medium">{eventStatus?.label || event.status}</div>
-                                  <div className="text-muted-foreground">{new Date(event.date).toLocaleDateString('vi-VN')}</div>
-                                </div>
-                                {i < order.timeline.length - 1 && <div className="w-8 h-0.5 bg-green-300 mx-1" />}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
 
                       {/* Return request */}
                       {order.returnRequest && (
@@ -140,45 +250,32 @@ export function OrdersPage() {
                               {order.returnRequest.status === 'pending' ? 'Đang xử lý' : order.returnRequest.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground">{order.returnRequest.reason}</p>
                         </div>
                       )}
 
                       {/* Footer */}
                       <div className="flex items-center justify-between">
                         <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="gap-1" onClick={() => setViewingOrder(order)}>
+                            <Eye className="h-3 w-3" /> Chi tiết
+                          </Button>
                           {order.status === 'delivered' && !order.returnRequest && (
                             <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1">
-                                  <RotateCcw className="h-3 w-3" /> Yêu cầu hoàn hàng
-                                </Button>
-                              </DialogTrigger>
+                              <Button variant="outline" size="sm" className="gap-1" onClick={() => {}}>
+                                <RotateCcw className="h-3 w-3" /> Hoàn hàng
+                              </Button>
                               <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Yêu cầu hoàn hàng - {order.id}</DialogTitle>
-                                </DialogHeader>
+                                <DialogHeader><DialogTitle>Yêu cầu hoàn hàng - #{order.id}</DialogTitle></DialogHeader>
                                 <div className="space-y-4">
                                   <div className="space-y-2">
                                     <Label>Lý do hoàn hàng</Label>
-                                    <Textarea
-                                      placeholder="Mô tả lý do bạn muốn hoàn hàng..."
-                                      value={returnReason}
-                                      onChange={(e) => setReturnReason(e.target.value)}
-                                    />
+                                    <Textarea placeholder="Mô tả lý do bạn muốn hoàn hàng..." value={returnReason} onChange={e => setReturnReason(e.target.value)} />
                                   </div>
-                                   <Button onClick={() => handleReturn(order.id)} className="w-full">
-                                    Gửi yêu cầu
-                                  </Button>
+                                  <Button onClick={() => void handleReturn(order.id)} className="w-full">Gửi yêu cầu</Button>
                                 </div>
                               </DialogContent>
                             </Dialog>
                           )}
-                          <Link to={`/orders/${order.id}`}>
-                            <Button variant="outline" size="sm" className="gap-1">
-                              <Eye className="h-3 w-3" /> Chi tiết
-                            </Button>
-                          </Link>
                         </div>
                         <div className="text-right">
                           <div className="text-sm text-muted-foreground">Tổng cộng</div>
@@ -193,6 +290,11 @@ export function OrdersPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Order Detail Modal */}
+      <Dialog open={!!viewingOrder} onOpenChange={open => { if (!open) setViewingOrder(null); }}>
+        {viewingOrder && <OrderDetail order={viewingOrder} onClose={() => setViewingOrder(null)} />}
+      </Dialog>
     </div>
   );
 }

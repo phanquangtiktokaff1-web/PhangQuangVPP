@@ -17,6 +17,46 @@ router.get('/categories', async (_req, res, next) => {
   }
 });
 
+router.post('/categories', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { name, slug, icon = '', description = '' } = req.body;
+    if (!name) return res.status(400).json({ message: 'Tên danh mục là bắt buộc' });
+    const id = `cat-${Date.now()}`;
+    const pool = await getPool();
+    await pool.request()
+      .input('id', sql.NVarChar, id)
+      .input('name', sql.NVarChar, name)
+      .input('slug', sql.NVarChar, slug || name.toLowerCase().replace(/\s+/g, '-'))
+      .input('icon', sql.NVarChar, icon)
+      .input('description', sql.NVarChar, description)
+      .query('INSERT INTO dbo.categories (id, name, slug, icon, description) VALUES (@id, @name, @slug, @icon, @description)');
+    return res.json({ id });
+  } catch (error) { return next(error); }
+});
+
+router.put('/categories/:id', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { name, slug, icon = '', description = '' } = req.body;
+    const pool = await getPool();
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('name', sql.NVarChar, name)
+      .input('slug', sql.NVarChar, slug || name.toLowerCase().replace(/\s+/g, '-'))
+      .input('icon', sql.NVarChar, icon)
+      .input('description', sql.NVarChar, description)
+      .query('UPDATE dbo.categories SET name=@name, slug=@slug, icon=@icon, description=@description WHERE id=@id');
+    return res.json({ ok: true });
+  } catch (error) { return next(error); }
+});
+
+router.delete('/categories/:id', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    await pool.request().input('id', sql.NVarChar, req.params.id).query('DELETE FROM dbo.categories WHERE id=@id');
+    return res.json({ ok: true });
+  } catch (error) { return next(error); }
+});
+
 router.get('/brands', async (_req, res, next) => {
   try {
     const pool = await getPool();
@@ -26,6 +66,44 @@ router.get('/brands', async (_req, res, next) => {
     return next(error);
   }
 });
+
+router.post('/brands', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { name, logo = '' } = req.body;
+    if (!name) return res.status(400).json({ message: 'Tên thương hiệu là bắt buộc' });
+    const id = `brand-${Date.now()}`;
+    const pool = await getPool();
+    await pool.request()
+      .input('id', sql.NVarChar, id)
+      .input('name', sql.NVarChar, name)
+      .input('logo', sql.NVarChar, logo)
+      .query('INSERT INTO dbo.brands (id, name, logo) VALUES (@id, @name, @logo)');
+    return res.json({ id });
+  } catch (error) { return next(error); }
+});
+
+router.put('/brands/:id', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const { name, logo = '' } = req.body;
+    const pool = await getPool();
+    await pool.request()
+      .input('id', sql.NVarChar, req.params.id)
+      .input('name', sql.NVarChar, name)
+      .input('logo', sql.NVarChar, logo)
+      .query('UPDATE dbo.brands SET name=@name, logo=@logo WHERE id=@id');
+    return res.json({ ok: true });
+  } catch (error) { return next(error); }
+});
+
+router.delete('/brands/:id', authMiddleware, adminMiddleware, async (req, res, next) => {
+  try {
+    const pool = await getPool();
+    await pool.request().input('id', sql.NVarChar, req.params.id).query('DELETE FROM dbo.brands WHERE id=@id');
+    return res.json({ ok: true });
+  } catch (error) { return next(error); }
+});
+
+
 
 // ==================== PRODUCTS LIST & SEARCH ====================
 

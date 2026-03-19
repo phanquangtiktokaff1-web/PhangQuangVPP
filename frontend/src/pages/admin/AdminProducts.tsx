@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit, Trash2, Search, AlertTriangle, Loader2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, AlertTriangle, Loader2, X, Upload, ImageIcon, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,11 +9,93 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import { catalogApi, formatPrice, type Product, type Category, type Brand } from '@/lib/api-service';
 import { toast } from 'sonner';
 
-const empty = { name:'',sku:'',categoryId:'',brandId:'',price:'',originalPrice:'',stock:'',description:'',imageUrl:'' };
+const emptyForm = {
+  name: '', categoryId: '', brandId: '',
+  price: '', originalPrice: '', stock: '',
+  description: '', isCustomizable: false, isFlashSale: false,
+  wholesalePriceJson: '', colors: '',
+};
 
+type FormState = typeof emptyForm;
+
+type ImgObj = { id: string; url: string; alt: string };
+
+/* ─── Image upload helper ─────────────────────────────────── */
+function ImageUploader({ images, onChange }: {
+  images: ImgObj[];
+  onChange: (imgs: ImgObj[]) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const url = ev.target?.result as string;
+        onChange([...images, { id: `img-${Date.now()}`, url, alt: file.name }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const remove = (idx: number) => onChange(images.filter((_, i) => i !== idx));
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {images.map((img, idx) => (
+          <div key={idx} className="relative group w-20 h-20 rounded-lg border overflow-hidden">
+            <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-white"
+              onClick={() => remove(idx)}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {idx === 0 && (
+              <span className="absolute bottom-0 left-0 right-0 bg-primary text-primary-foreground text-[9px] text-center py-0.5">Ảnh chính</span>
+            )}
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="w-20 h-20 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center text-muted-foreground hover:border-primary hover:text-primary transition-colors gap-1"
+        >
+          <Upload className="h-5 w-5" />
+          <span className="text-[10px]">Tải ảnh</span>
+        </button>
+      </div>
+      <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFile} />
+      {/* Also allow URL input */}
+      <div className="flex gap-2">
+        <Input
+          placeholder="Hoặc nhập URL ảnh..."
+          className="text-sm"
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              const val = (e.target as HTMLInputElement).value.trim();
+              if (val) { onChange([...images, { id: `img-${Date.now()}`, url: val, alt: 'image' }]); (e.target as HTMLInputElement).value = ''; }
+            }
+          }}
+        />
+        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => {
+          const input = document.querySelector<HTMLInputElement>('[placeholder="Hoặc nhập URL ảnh..."]');
+          if (input?.value.trim()) { onChange([...images, { id: `img-${Date.now()}`, url: input.value.trim(), alt: 'image' }]); input.value = ''; }
+        }}><ImageIcon className="h-4 w-4" /></Button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main Component ──────────────────────────────────────── */
 export function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,14 +105,18 @@ export function AdminProducts() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showDialog, setShowDialog] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [images, setImages] = useState<{ id: string; url: string; alt: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  const fetchProducts = async (params?: Record<string, string>) => {
+  const f = (field: keyof FormState, value: string | boolean) =>
+    setForm(p => ({ ...p, [field]: value }));
+
+  const fetchProducts = async (params: Record<string, string> = {}) => {
     setLoading(true);
     try {
-      const data = await catalogApi.getProducts({ ...params, status: undefined });
+      const data = await catalogApi.getProducts({ ...params });
       setProducts(data);
     } catch { toast.error('Không tải được danh sách sản phẩm'); }
     finally { setLoading(false); }
@@ -53,30 +139,58 @@ export function AdminProducts() {
     }, 350);
   }, [searchQuery, categoryFilter]);
 
-  const openAdd = () => { setEditing(null); setForm(empty); setShowDialog(true); };
+  const openAdd = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setImages([]);
+    setShowDialog(true);
+  };
+
   const openEdit = (p: Product) => {
     setEditing(p);
-    setForm({ name:p.name, sku:p.sku, categoryId:p.categoryId, brandId:p.brandId, price:String(p.price), originalPrice:String(p.originalPrice), stock:String(p.stock), description:p.description, imageUrl:p.images[0]?.url||'' });
+    setForm({
+      name: p.name, categoryId: p.categoryId, brandId: p.brandId,
+      price: String(p.price), originalPrice: String(p.originalPrice),
+      stock: String(p.stock), description: p.description,
+      isCustomizable: p.isCustomizable, isFlashSale: p.isFlashSale,
+      wholesalePriceJson: p.wholesalePrice ? JSON.stringify(p.wholesalePrice) : '',
+      colors: p.colors.join(', '),
+    });
+    setImages(p.images.map(img => ({ id: img.id, url: img.url, alt: img.alt })));
     setShowDialog(true);
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.sku || !form.price) { toast.error('Vui lòng điền đầy đủ thông tin'); return; }
+    if (!form.name || !form.price) { toast.error('Vui lòng điền tên và giá sản phẩm'); return; }
     setSaving(true);
     try {
-      const payload: Record<string, unknown> = { name:form.name, categoryId:form.categoryId, brandId:form.brandId, price:Number(form.price), originalPrice:Number(form.originalPrice)||Number(form.price), stock:Number(form.stock)||0, description:form.description, images: form.imageUrl ? [{id:'img1',url:form.imageUrl,alt:form.name}] : [] };
+      let wholesalePrice = undefined;
+      if (form.wholesalePriceJson.trim()) {
+        try { wholesalePrice = JSON.parse(form.wholesalePriceJson); } catch { toast.error('JSON giá sỉ không hợp lệ'); setSaving(false); return; }
+      }
+      const payload: Record<string, unknown> = {
+        name: form.name, categoryId: form.categoryId, brandId: form.brandId,
+        price: Number(form.price),
+        originalPrice: Number(form.originalPrice) || Number(form.price),
+        stock: Number(form.stock) || 0,
+        description: form.description,
+        isCustomizable: form.isCustomizable,
+        isFlashSale: form.isFlashSale,
+        wholesalePrice: wholesalePrice ?? [],
+        colors: form.colors ? form.colors.split(',').map(c => c.trim()).filter(Boolean) : [],
+        images,
+      };
       if (editing) {
         await catalogApi.updateProduct(editing.id, payload);
         toast.success('Đã cập nhật sản phẩm!');
       } else {
-        payload.sku = form.sku;
         await catalogApi.createProduct(payload);
         toast.success('Đã thêm sản phẩm!');
       }
       setShowDialog(false);
       fetchProducts();
     } catch (e: unknown) {
-      toast.error((e as {response?:{data?:{message?:string}}})?.response?.data?.message || 'Lỗi lưu sản phẩm');
+      toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Lỗi lưu sản phẩm');
     } finally { setSaving(false); }
   };
 
@@ -102,7 +216,7 @@ export function AdminProducts() {
       <div className="flex gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Tìm theo tên, SKU..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+          <Input placeholder="Tìm theo tên..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Danh mục" /></SelectTrigger>
@@ -119,9 +233,10 @@ export function AdminProducts() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Sản phẩm</TableHead><TableHead>SKU</TableHead><TableHead>Danh mục</TableHead>
+                  <TableHead>Sản phẩm</TableHead><TableHead>Danh mục</TableHead>
                   <TableHead className="text-right">Giá</TableHead><TableHead className="text-center">Tồn kho</TableHead>
-                  <TableHead className="text-center">Đã bán</TableHead><TableHead className="text-center">Trạng thái</TableHead>
+                  <TableHead className="text-center">Đã bán</TableHead><TableHead className="text-center">Thuộc tính</TableHead>
+                  <TableHead className="text-center">Trạng thái</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
@@ -132,14 +247,13 @@ export function AdminProducts() {
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <img src={product.images[0]?.url} alt={product.name} className="w-10 h-10 rounded object-cover" />
+                          <img src={product.images[0]?.url} alt={product.name} className="w-10 h-10 rounded object-cover bg-muted" />
                           <div>
                             <div className="font-medium text-sm">{product.name}</div>
                             <div className="text-xs text-muted-foreground">{brands.find(b => b.id === product.brandId)?.name}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{product.sku}</TableCell>
                       <TableCell><Badge variant="outline">{category?.name}</Badge></TableCell>
                       <TableCell className="text-right">
                         <div className="font-medium">{formatPrice(product.price)}</div>
@@ -152,6 +266,13 @@ export function AdminProducts() {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">{product.sold}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex gap-1 justify-center">
+                          {product.isCustomizable && <Badge variant="secondary" className="text-xs">Tùy chỉnh</Badge>}
+                          {product.wholesalePrice && product.wholesalePrice.length > 0 && <Badge variant="secondary" className="text-xs">Sỉ</Badge>}
+                          {product.isFlashSale && <Badge className="text-xs bg-red-500">Sale</Badge>}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-center">
                         <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
                           {product.status === 'active' ? 'Đang bán' : 'Ngừng bán'}
@@ -173,39 +294,81 @@ export function AdminProducts() {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Dialog */}
+      {/* Product Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Tên sản phẩm *</Label><Input value={form.name} onChange={e => setForm(p => ({...p,name:e.target.value}))} placeholder="Nhập tên sản phẩm" /></div>
-              <div className="space-y-2"><Label>Mã SKU *</Label><Input value={form.sku} onChange={e => setForm(p => ({...p,sku:e.target.value}))} placeholder="VD: TL-027-BL" disabled={!!editing} /></div>
+            {/* Basics */}
+            <div className="space-y-2">
+              <Label>Tên sản phẩm *</Label>
+              <Input value={form.name} onChange={e => f('name', e.target.value)} placeholder="Nhập tên sản phẩm" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Danh mục</Label>
-                <Select value={form.categoryId} onValueChange={v => setForm(p => ({...p,categoryId:v}))}>
+                <Select value={form.categoryId} onValueChange={v => f('categoryId', v)}>
                   <SelectTrigger><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
                   <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2"><Label>Thương hiệu</Label>
-                <Select value={form.brandId} onValueChange={v => setForm(p => ({...p,brandId:v}))}>
+                <Select value={form.brandId} onValueChange={v => f('brandId', v)}>
                   <SelectTrigger><SelectValue placeholder="Chọn thương hiệu" /></SelectTrigger>
                   <SelectContent>{brands.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2"><Label>Giá bán *</Label><Input type="number" value={form.price} onChange={e => setForm(p => ({...p,price:e.target.value}))} placeholder="0" /></div>
-              <div className="space-y-2"><Label>Giá gốc</Label><Input type="number" value={form.originalPrice} onChange={e => setForm(p => ({...p,originalPrice:e.target.value}))} placeholder="0" /></div>
-              <div className="space-y-2"><Label>Tồn kho</Label><Input type="number" value={form.stock} onChange={e => setForm(p => ({...p,stock:e.target.value}))} placeholder="0" /></div>
+              <div className="space-y-2"><Label>Giá bán *</Label><Input type="number" value={form.price} onChange={e => f('price', e.target.value)} placeholder="0" /></div>
+              <div className="space-y-2"><Label>Giá gốc</Label><Input type="number" value={form.originalPrice} onChange={e => f('originalPrice', e.target.value)} placeholder="0" /></div>
+              <div className="space-y-2"><Label>Tồn kho</Label><Input type="number" value={form.stock} onChange={e => f('stock', e.target.value)} placeholder="0" /></div>
             </div>
-            <div className="space-y-2"><Label>Mô tả</Label><Textarea value={form.description} onChange={e => setForm(p => ({...p,description:e.target.value}))} rows={3} /></div>
-            <div className="space-y-2"><Label>Hình ảnh (URL)</Label><Input value={form.imageUrl} onChange={e => setForm(p => ({...p,imageUrl:e.target.value}))} placeholder="https://..." /></div>
-            <div className="flex gap-2 justify-end">
+            <div className="space-y-2"><Label>Màu sắc (phân cách bằng dấu phẩy)</Label>
+              <Input value={form.colors} onChange={e => f('colors', e.target.value)} placeholder="Đen, Trắng, Xanh..." />
+            </div>
+            <div className="space-y-2"><Label>Mô tả</Label>
+              <Textarea value={form.description} onChange={e => f('description', e.target.value)} rows={3} />
+            </div>
+            {/* Images */}
+            <div className="space-y-2">
+              <Label>Hình ảnh sản phẩm</Label>
+              <ImageUploader images={images} onChange={setImages} />
+            </div>
+            {/* Flags */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-3 rounded-lg border">
+                <Switch checked={form.isCustomizable} onCheckedChange={v => f('isCustomizable', v)} id="customizable" />
+                <Label htmlFor="customizable" className="cursor-pointer">
+                  <div className="font-medium text-sm">Có thể tùy chỉnh</div>
+                  <div className="text-xs text-muted-foreground">In tên, logo...</div>
+                </Label>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-lg border">
+                <Switch checked={form.isFlashSale} onCheckedChange={v => f('isFlashSale', v)} id="flashsale" />
+                <Label htmlFor="flashsale" className="cursor-pointer">
+                  <div className="font-medium text-sm">Flash Sale</div>
+                  <div className="text-xs text-muted-foreground">Hiển thị trang flash sale</div>
+                </Label>
+              </div>
+            </div>
+            {/* Wholesale pricing */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-500" /> Giá sỉ (JSON)
+              </Label>
+              <Textarea
+                value={form.wholesalePriceJson}
+                onChange={e => f('wholesalePriceJson', e.target.value)}
+                placeholder={`[{"minQty": 50, "price": 25000}, {"minQty": 100, "price": 22000}]`}
+                rows={2}
+                className="font-mono text-xs"
+              />
+              <p className="text-xs text-muted-foreground">Để trống nếu không có giá sỉ. Format: [{`{"minQty": số lượng tối thiểu, "price": đơn giá}`}]</p>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
               <Button variant="outline" onClick={() => setShowDialog(false)}><X className="h-4 w-4 mr-1" />Hủy</Button>
               <Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}Lưu sản phẩm</Button>
             </div>

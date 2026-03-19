@@ -1,7 +1,8 @@
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ScrollToTop } from '@/components/layout/ScrollToTop';
+import { useAuthStore } from '@/store/auth-store';
 
 // Layouts
 import { CustomerLayout } from '@/components/layout/CustomerLayout';
@@ -22,6 +23,8 @@ import { WishlistPage } from '@/pages/WishlistPage';
 import { ComparePage } from '@/pages/ComparePage';
 import { CustomizePage } from '@/pages/CustomizePage';
 import { WholesalePage } from '@/pages/WholesalePage';
+import { FlashSalePage } from '@/pages/FlashSalePage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 
 // Admin Pages
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
@@ -31,6 +34,16 @@ import { AdminUsers } from '@/pages/admin/AdminUsers';
 import { AdminVouchers } from '@/pages/admin/AdminVouchers';
 import { AdminInventory } from '@/pages/admin/AdminInventory';
 import { AdminReports } from '@/pages/admin/AdminReports';
+import { AdminChat } from '@/pages/admin/AdminChat';
+import { AdminCategories } from '@/pages/admin/AdminCategories';
+
+// Admin guard component
+function AdminGuard({ children }: { children: React.ReactNode }) {
+  const { user, isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (user?.role !== 'admin' && user?.role !== 'staff') return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
 
 function App() {
   return (
@@ -59,10 +72,11 @@ function App() {
               <Route path="/compare" element={<ComparePage />} />
               <Route path="/customize" element={<CustomizePage />} />
               <Route path="/wholesale" element={<WholesalePage />} />
+              <Route path="/flash-sale" element={<FlashSalePage />} />
             </Route>
 
-            {/* Admin pages with layout */}
-            <Route path="/admin" element={<AdminLayout />}>
+            {/* Admin pages with guard + layout */}
+            <Route path="/admin" element={<AdminGuard><AdminLayout /></AdminGuard>}>
               <Route index element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
               <Route path="orders" element={<AdminOrders />} />
@@ -70,7 +84,12 @@ function App() {
               <Route path="vouchers" element={<AdminVouchers />} />
               <Route path="inventory" element={<AdminInventory />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="chat" element={<AdminChat />} />
+              <Route path="categories" element={<AdminCategories />} />
             </Route>
+
+            {/* 404 */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>

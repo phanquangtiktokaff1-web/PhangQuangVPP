@@ -64,7 +64,7 @@ export function ProfilePage() {
       ward: addrWard,
       district: addrDistrict,
       city: addrCity,
-      isDefault: user.addresses.length === 0,
+      isDefault: (user.addresses ?? []).length === 0,
     });
     toast.success('Thêm địa chỉ thành công!');
     setShowAddressDialog(false);
@@ -179,11 +179,11 @@ export function ProfilePage() {
               </Dialog>
             </CardHeader>
             <CardContent>
-              {user.addresses.length === 0 ? (
+              {(user.addresses ?? []).length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">Chưa có địa chỉ nào</p>
               ) : (
                 <div className="space-y-4">
-                  {user.addresses.map((addr) => (
+                  {(user.addresses ?? []).map((addr) => (
                     <div key={addr.id} className="border rounded-lg p-4 flex justify-between items-start">
                       <div>
                         <div className="flex items-center gap-2 mb-1">

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Tag, BarChart3,
-  Warehouse, ChevronLeft, ChevronRight, LogOut, Bell, Settings, Menu
+  Warehouse, ChevronLeft, ChevronRight, LogOut, Bell, Settings, Menu, MessageCircle, FolderTree
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -17,6 +17,8 @@ const sidebarItems = [
   { icon: Tag, label: 'Voucher', path: '/admin/vouchers' },
   { icon: Warehouse, label: 'Kho hàng', path: '/admin/inventory' },
   { icon: BarChart3, label: 'Báo cáo', path: '/admin/reports' },
+  { icon: FolderTree, label: 'Danh mục', path: '/admin/categories' },
+  { icon: MessageCircle, label: 'Chat', path: '/admin/chat' },
 ];
 
 export function AdminLayout() {
@@ -52,11 +54,12 @@ export function AdminLayout() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium ${
                 isActive
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'hover:opacity-90'
                   : 'text-muted-foreground hover:bg-accent hover:text-foreground'
               }`}
+              style={isActive ? { backgroundColor: '#03045E', color: '#FFFFFF' } : undefined}
             >
               <item.icon className="h-5 w-5 shrink-0" />
               {(!collapsed || mobile) && <span>{item.label}</span>}
@@ -113,10 +116,10 @@ export function AdminLayout() {
               </SheetContent>
             </Sheet>
             <h1 className="text-lg font-semibold text-foreground">
-              {sidebarItems.find(i => 
-                location.pathname === i.path || 
+              {sidebarItems.find(i =>
+                location.pathname === i.path ||
                 (i.path !== '/admin' && location.pathname.startsWith(i.path))
-              )?.label || 'Dashboard'}
+              )?.label ?? 'Admin'}
             </h1>
           </div>
 

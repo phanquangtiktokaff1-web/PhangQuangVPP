@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { CartItem, Product, Address, PaymentMethod, ShippingMethod } from '@/lib/api-service';
+import { catalogApi } from '@/lib/api-service';
 import { api } from '@/lib/api';
 
 interface CartState {
@@ -12,7 +13,7 @@ interface CartState {
   voucherDiscount: number;
   note: string;
 
-  addItem: (productId: string, quantity?: number, customization?: { type: string; text: string }) => void;
+  addItem: (productId: string, quantity?: number, customization?: { type: string; text: string }) => Promise<void>;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -41,7 +42,7 @@ export const useCartStore = create<CartState>()(
       voucherDiscount: 0,
       note: '',
 
-      addItem: (productId, quantity = 1, customization) => {
+      addItem: async (productId, quantity = 1, customization) => {
         const { items } = get();
         const existing = items.find(i => i.productId === productId);
         if (existing) {
@@ -52,8 +53,18 @@ export const useCartStore = create<CartState>()(
                 : i
             ),
           });
-        } else {
-          set({ items: [...items, { productId, quantity, customization }] });
+          return;
+        }
+        // Fetch the product to store price and data inline
+        try {
+          const product = await catalogApi.getProduct(productId);
+          const price = product.isFlashSale && product.flashSalePrice
+            ? product.flashSalePrice
+            : product.price;
+          set({ items: [...get().items, { productId, quantity, customization, price, product }] });
+        } catch {
+          // Fallback: add without product data (will show no product in cart UI)
+          set({ items: [...get().items, { productId, quantity, customization }] });
         }
       },
 
@@ -91,21 +102,7 @@ export const useCartStore = create<CartState>()(
             return true;
           }
           return false;
-        } catch (_error) {
-          // Fallback to local mock rules if backend is unavailable.
-          const vouchers: Record<string, number> = {
-            'WELCOME20K': 20000,
-            'SAVE15K': 15000,
-            'SALE10': 0.1,
-            'BULK20': 0.2,
-          };
-          const discount = vouchers[normalized];
-          if (discount !== undefined) {
-            const subtotal = get().getSubtotal();
-            const actualDiscount = discount < 1 ? Math.min(subtotal * discount, 50000) : discount;
-            set({ voucherCode: normalized, voucherDiscount: actualDiscount });
-            return true;
-          }
+        } catch {
           return false;
         }
       },
@@ -114,13 +111,12 @@ export const useCartStore = create<CartState>()(
       setNote: (note) => set({ note }),
 
       getCartProducts: () => {
-        // Returns items with product stub based on stored data
         return get().items.filter(i => i.product).map(item => ({ ...item, product: item.product! }));
       },
 
       getSubtotal: () => {
         return get().items.reduce((total, item) => {
-          const price = item.price || 0;
+          const price = item.price ?? item.product?.price ?? 0;
           return total + price * item.quantity;
         }, 0);
       },
@@ -128,7 +124,7 @@ export const useCartStore = create<CartState>()(
       getShippingFee: () => {
         const { shippingMethod } = get();
         const subtotal = get().getSubtotal();
-        if (subtotal >= 500000) return 0; // Free shipping for orders >= 500k
+        if (subtotal >= 500000) return 0;
         switch (shippingMethod) {
           case 'express': return 35000;
           case 'same_day': return 50000;

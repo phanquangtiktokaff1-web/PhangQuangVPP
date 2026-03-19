@@ -54,7 +54,15 @@ export function formatPrice(price: number): string {
 
 export const catalogApi = {
   getCategories: () => api.get<Category[]>('/catalog/categories').then(r => r.data),
+  createCategory: (data: Partial<Category>) => api.post<{id:string}>('/catalog/categories', data).then(r => r.data),
+  updateCategory: (id: string, data: Partial<Category>) => api.put(`/catalog/categories/${id}`, data),
+  deleteCategory: (id: string) => api.delete(`/catalog/categories/${id}`),
+
   getBrands: () => api.get<Brand[]>('/catalog/brands').then(r => r.data),
+  createBrand: (data: Partial<Brand>) => api.post<{id:string}>('/catalog/brands', data).then(r => r.data),
+  updateBrand: (id: string, data: Partial<Brand>) => api.put(`/catalog/brands/${id}`, data),
+  deleteBrand: (id: string) => api.delete(`/catalog/brands/${id}`),
+
   getProducts: (params?: Record<string, string | number | boolean | undefined>) =>
     api.get<Product[]>('/catalog/products', { params }).then(r => r.data),
   getProduct: (idOrSlug: string) => api.get<Product>(`/catalog/products/${idOrSlug}`).then(r => r.data),
@@ -69,6 +77,7 @@ export const catalogApi = {
   submitReview: (productId: string, data: { rating: number; comment: string }) =>
     api.post(`/catalog/products/${productId}/reviews`, data).then(r => r.data),
 };
+
 
 // ─── Orders ──────────────────────────────────────────────────────────────────
 

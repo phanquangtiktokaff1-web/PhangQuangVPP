@@ -65,14 +65,14 @@ export function ProductDetailPage() {
   const inWishlist = isInWishlist(product.id);
   const currentPrice = product.price;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     const customization = customType && customText ? { type: customType, text: customText } : undefined;
-    addItem(product.id, quantity, customization);
+    await addItem(product.id, quantity, customization);
     toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
+  const handleBuyNow = async () => {
+    await handleAddToCart();
     navigate('/cart');
   };
 

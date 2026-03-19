@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router';
 import { Header } from './Header';
 import { Footer } from './Footer';
-import { LiveChat } from '@/components/chat/LiveChat';
+import { ChatWidget } from '@/components/chat/ChatWidget';
 
 export function CustomerLayout() {
   return (
@@ -11,7 +11,7 @@ export function CustomerLayout() {
         <Outlet />
       </main>
       <Footer />
-      <LiveChat />
+      <ChatWidget />
     </div>
   );
 }

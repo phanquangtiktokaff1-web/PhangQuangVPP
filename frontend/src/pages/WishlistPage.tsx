@@ -5,8 +5,7 @@ import { ProductCard } from '@/components/product/ProductCard';
 import { useWishlistStore } from '@/store/wishlist-store';
 
 export function WishlistPage() {
-  const { getWishlistProducts, items } = useWishlistStore();
-  const wishlistProducts = getWishlistProducts();
+  const { products: wishlistProducts } = useWishlistStore();
 
   if (wishlistProducts.length === 0) {
     return (
@@ -23,7 +22,7 @@ export function WishlistPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Heart className="h-6 w-6 text-red-500" /> Sản phẩm yêu thích ({items.length})
+          <Heart className="h-6 w-6 text-red-500" /> Sản phẩm yêu thích ({wishlistProducts.length})
         </h1>
         <Link to="/compare">
           <Button variant="outline" className="gap-2">

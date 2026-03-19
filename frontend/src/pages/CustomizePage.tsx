@@ -30,7 +30,7 @@ export function CustomizePage() {
       toast.error('Vui lòng chọn sản phẩm và nhập nội dung tùy chỉnh');
       return;
     }
-    addItem(selectedProduct, quantity, { type: customType, text: customText });
+    void addItem(selectedProduct, quantity, { type: customType, text: customText });
     toast.success('Đã thêm sản phẩm tùy chỉnh vào giỏ hàng!');
   };
 
