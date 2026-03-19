@@ -32,6 +32,7 @@ const paymentMethodLabels: Record<string, string> = {
 
 function OrderDetail({ order, onClose }: { order: Order; onClose: () => void }) {
   const status = statusConfig[order.status];
+  const customizedItems = order.items.filter(item => item.customization);
   return (
     <DialogContent className="max-w-2xl max-h-[90vh]">
       <DialogHeader>
@@ -96,6 +97,26 @@ function OrderDetail({ order, onClose }: { order: Order; onClose: () => void }) 
               ))}
             </div>
           </div>
+
+          {customizedItems.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-purple-700">
+                  <Sparkles className="h-4 w-4" /> Thông tin tùy chỉnh ({customizedItems.length})
+                </h3>
+                <div className="space-y-2">
+                  {customizedItems.map((item, idx) => (
+                    <div key={`${item.productId}-${idx}`} className="rounded-lg border border-purple-200 bg-purple-50 p-3">
+                      <div className="text-sm font-medium text-foreground">{item.productName}</div>
+                      <div className="text-xs text-purple-700 mt-1">Loại: {item.customization?.type}</div>
+                      <div className="text-sm text-purple-900 mt-1">Nội dung: {item.customization?.text}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           <Separator />
 
@@ -195,6 +216,7 @@ export function OrdersPage() {
             <div className="space-y-4">
               {filteredOrders.map(order => {
                 const status = statusConfig[order.status];
+                const customizedItems = order.items.filter(item => item.customization);
                 return (
                   <Card key={order.id}>
                     <CardHeader className="pb-3">
@@ -203,6 +225,11 @@ export function OrdersPage() {
                           <CardTitle className="text-base">#{order.id}</CardTitle>
                           <Badge className={status.color}>{status.label}</Badge>
                           <Badge variant="outline">{paymentMethodLabels[order.paymentMethod] ?? order.paymentMethod}</Badge>
+                          {customizedItems.length > 0 && (
+                            <Badge className="bg-purple-100 text-purple-800 border border-purple-200">
+                              <Sparkles className="h-3 w-3 mr-1" /> {customizedItems.length} tùy chỉnh
+                            </Badge>
+                          )}
                         </div>
                         <span className="text-sm text-muted-foreground">
                           {new Date(order.createdAt).toLocaleDateString('vi-VN')}
@@ -237,6 +264,24 @@ export function OrdersPage() {
                           <p className="text-xs text-muted-foreground pl-15">+{order.items.length - 2} sản phẩm khác</p>
                         )}
                       </div>
+
+                      {customizedItems.length > 0 && (
+                        <div className="mb-4 rounded-lg border border-purple-200 bg-purple-50 p-3">
+                          <div className="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" /> Thông tin tùy chỉnh
+                          </div>
+                          <div className="space-y-1">
+                            {customizedItems.slice(0, 2).map((item, idx) => (
+                              <p key={`${item.productId}-${idx}`} className="text-xs text-purple-900">
+                                {item.productName}: {item.customization?.type} - {item.customization?.text}
+                              </p>
+                            ))}
+                            {customizedItems.length > 2 && (
+                              <p className="text-xs text-purple-700">+{customizedItems.length - 2} tùy chỉnh khác</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <Separator className="mb-4" />
 
