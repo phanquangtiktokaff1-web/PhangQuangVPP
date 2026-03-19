@@ -73,7 +73,7 @@ export function Header() {
                       to={`/category/${cat.slug}`}
                       className="flex items-center gap-2 p-2 rounded-md hover:bg-accent text-foreground"
                     >
-                      <IconRenderer name={cat.icon} className="h-4 w-4" />
+                      <IconRenderer name={cat.icon ?? ''} className="h-4 w-4" />
                       <span>{cat.name}</span>
                     </Link>
                   ))}

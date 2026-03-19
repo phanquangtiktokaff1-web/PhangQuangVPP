@@ -68,7 +68,7 @@ export function AdminReports() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1e6).toFixed(0)}M`} />
-                  <Tooltip formatter={(v: number) => [formatPrice(v), 'Doanh thu']} />
+                  <Tooltip formatter={v => [formatPrice(Number(v) || 0), 'Doanh thu']} />
                   <Area type="monotone" dataKey="revenue" stroke="#0077B6" fill="url(#rev)" name="Doanh thu" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -84,7 +84,7 @@ export function AdminReports() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis type="number" tickFormatter={v => `${(v/1e6).toFixed(0)}M`} tick={{ fontSize: 11 }} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
-                    <Tooltip formatter={(v: number) => formatPrice(v)} />
+                    <Tooltip formatter={v => formatPrice(Number(v) || 0)} />
                     <Bar dataKey="revenue" fill="#00B4D8" name="Doanh thu" />
                   </BarChart>
                 </ResponsiveContainer>

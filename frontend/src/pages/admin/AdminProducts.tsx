@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit, Trash2, Search, AlertTriangle, Loader2, X, Upload, ImageIcon, Check } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, AlertTriangle, Loader2, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,12 +17,13 @@ const emptyForm = {
   name: '', categoryId: '', brandId: '',
   price: '', originalPrice: '', stock: '',
   description: '', isCustomizable: false, isFlashSale: false,
-  wholesalePriceJson: '', colors: '',
+  colors: '',
 };
 
 type FormState = typeof emptyForm;
 
 type ImgObj = { id: string; url: string; alt: string };
+type WholesaleRow = { id: string; minQty: string; price: string };
 
 /* ─── Image upload helper ─────────────────────────────────── */
 function ImageUploader({ images, onChange }: {
@@ -74,23 +75,7 @@ function ImageUploader({ images, onChange }: {
         </button>
       </div>
       <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFile} />
-      {/* Also allow URL input */}
-      <div className="flex gap-2">
-        <Input
-          placeholder="Hoặc nhập URL ảnh..."
-          className="text-sm"
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              const val = (e.target as HTMLInputElement).value.trim();
-              if (val) { onChange([...images, { id: `img-${Date.now()}`, url: val, alt: 'image' }]); (e.target as HTMLInputElement).value = ''; }
-            }
-          }}
-        />
-        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => {
-          const input = document.querySelector<HTMLInputElement>('[placeholder="Hoặc nhập URL ảnh..."]');
-          if (input?.value.trim()) { onChange([...images, { id: `img-${Date.now()}`, url: input.value.trim(), alt: 'image' }]); input.value = ''; }
-        }}><ImageIcon className="h-4 w-4" /></Button>
-      </div>
+      <p className="text-xs text-muted-foreground">Ảnh đầu tiên sẽ được dùng làm ảnh chính của sản phẩm.</p>
     </div>
   );
 }
@@ -107,8 +92,9 @@ export function AdminProducts() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [images, setImages] = useState<{ id: string; url: string; alt: string }[]>([]);
+  const [wholesaleRows, setWholesaleRows] = useState<WholesaleRow[]>([]);
   const [saving, setSaving] = useState(false);
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const f = (field: keyof FormState, value: string | boolean) =>
     setForm(p => ({ ...p, [field]: value }));
@@ -130,7 +116,7 @@ export function AdminProducts() {
   }, []);
 
   useEffect(() => {
-    clearTimeout(searchTimer.current);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(() => {
       const params: Record<string, string> = {};
       if (searchQuery) params.q = searchQuery;
@@ -143,6 +129,7 @@ export function AdminProducts() {
     setEditing(null);
     setForm(emptyForm);
     setImages([]);
+    setWholesaleRows([]);
     setShowDialog(true);
   };
 
@@ -153,21 +140,60 @@ export function AdminProducts() {
       price: String(p.price), originalPrice: String(p.originalPrice),
       stock: String(p.stock), description: p.description,
       isCustomizable: p.isCustomizable, isFlashSale: p.isFlashSale,
-      wholesalePriceJson: p.wholesalePrice ? JSON.stringify(p.wholesalePrice) : '',
       colors: p.colors.join(', '),
     });
     setImages(p.images.map(img => ({ id: img.id, url: img.url, alt: img.alt })));
+    setWholesaleRows(
+      (p.wholesalePrice ?? []).map((wp, idx) => ({
+        id: `ws-${p.id}-${idx}`,
+        minQty: String(wp.minQty),
+        price: String(wp.price),
+      }))
+    );
     setShowDialog(true);
+  };
+
+  const addWholesaleRow = () => {
+    setWholesaleRows(prev => [...prev, { id: `ws-${Date.now()}`, minQty: '', price: '' }]);
+  };
+
+  const removeWholesaleRow = (id: string) => {
+    setWholesaleRows(prev => prev.filter(row => row.id !== id));
+  };
+
+  const updateWholesaleRow = (id: string, field: 'minQty' | 'price', value: string) => {
+    setWholesaleRows(prev => prev.map(row => (row.id === id ? { ...row, [field]: value } : row)));
   };
 
   const handleSave = async () => {
     if (!form.name || !form.price) { toast.error('Vui lòng điền tên và giá sản phẩm'); return; }
     setSaving(true);
     try {
-      let wholesalePrice = undefined;
-      if (form.wholesalePriceJson.trim()) {
-        try { wholesalePrice = JSON.parse(form.wholesalePriceJson); } catch { toast.error('JSON giá sỉ không hợp lệ'); setSaving(false); return; }
+      const parsedWholesale = wholesaleRows
+        .map(row => ({
+          id: row.id,
+          minQty: row.minQty.trim(),
+          price: row.price.trim(),
+        }))
+        .filter(row => row.minQty !== '' || row.price !== '');
+
+      const hasInvalidWholesale = parsedWholesale.some(row => {
+        if (!row.minQty || !row.price) return true;
+        const minQty = Number(row.minQty);
+        const price = Number(row.price);
+        return !Number.isFinite(minQty) || !Number.isFinite(price) || minQty <= 0 || price <= 0;
+      });
+
+      if (hasInvalidWholesale) {
+        toast.error('Giá sỉ không hợp lệ. Vui lòng nhập đủ số lượng tối thiểu và đơn giá lớn hơn 0.');
+        setSaving(false);
+        return;
       }
+
+      const wholesalePrice = parsedWholesale
+        .map(row => ({ minQty: Number(row.minQty), price: Number(row.price) }))
+        .sort((a, b) => a.minQty - b.minQty);
+
       const payload: Record<string, unknown> = {
         name: form.name, categoryId: form.categoryId, brandId: form.brandId,
         price: Number(form.price),
@@ -176,7 +202,7 @@ export function AdminProducts() {
         description: form.description,
         isCustomizable: form.isCustomizable,
         isFlashSale: form.isFlashSale,
-        wholesalePrice: wholesalePrice ?? [],
+        wholesalePrice,
         colors: form.colors ? form.colors.split(',').map(c => c.trim()).filter(Boolean) : [],
         images,
       };
@@ -355,17 +381,41 @@ export function AdminProducts() {
             </div>
             {/* Wholesale pricing */}
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" /> Giá sỉ (JSON)
-              </Label>
-              <Textarea
-                value={form.wholesalePriceJson}
-                onChange={e => f('wholesalePriceJson', e.target.value)}
-                placeholder={`[{"minQty": 50, "price": 25000}, {"minQty": 100, "price": 22000}]`}
-                rows={2}
-                className="font-mono text-xs"
-              />
-              <p className="text-xs text-muted-foreground">Để trống nếu không có giá sỉ. Format: [{`{"minQty": số lượng tối thiểu, "price": đơn giá}`}]</p>
+              <div className="flex items-center justify-between">
+                <Label>Giá sỉ</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addWholesaleRow}>
+                  <Plus className="h-4 w-4 mr-1" /> Thêm mốc giá
+                </Button>
+              </div>
+
+              {wholesaleRows.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Chưa có giá sỉ. Bấm "Thêm mốc giá" nếu sản phẩm có bán sỉ.</p>
+              ) : (
+                <div className="space-y-2">
+                  {wholesaleRows.map(row => (
+                    <div key={row.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="SL tối thiểu"
+                        value={row.minQty}
+                        onChange={e => updateWholesaleRow(row.id, 'minQty', e.target.value)}
+                      />
+                      <Input
+                        type="number"
+                        min={1}
+                        placeholder="Đơn giá"
+                        value={row.price}
+                        onChange={e => updateWholesaleRow(row.id, 'price', e.target.value)}
+                      />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeWholesaleRow(row.id)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Ví dụ: từ 50 sản phẩm giá 25.000đ, từ 100 sản phẩm giá 22.000đ.</p>
             </div>
 
             <div className="flex gap-2 justify-end pt-2">

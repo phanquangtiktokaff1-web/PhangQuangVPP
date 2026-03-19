@@ -80,7 +80,7 @@ export function HomePage() {
               <Card className="hover:shadow-md transition-all hover:-translate-y-0.5 text-center group cursor-pointer">
                 <CardContent className="p-3">
                   <div className="mb-2 flex justify-center text-primary group-hover:scale-110 transition-transform">
-                    <IconRenderer name={cat.icon} className="h-8 w-8" />
+                    <IconRenderer name={cat.icon ?? ''} className="h-8 w-8" />
                   </div>
                   <div className="text-xs font-medium group-hover:text-primary transition-colors leading-tight">{cat.name}</div>
                 </CardContent>

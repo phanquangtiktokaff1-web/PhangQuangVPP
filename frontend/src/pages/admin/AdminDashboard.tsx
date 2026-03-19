@@ -59,7 +59,7 @@ export function AdminDashboard() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v/1e6).toFixed(0)}M`} />
-                <Tooltip formatter={(v: number) => formatPrice(v)} />
+                <Tooltip formatter={v => formatPrice(Number(v) || 0)} />
                 <Bar dataKey="revenue" fill="#0077B6" radius={[4,4,0,0]} name="Doanh thu" />
               </BarChart>
             </ResponsiveContainer>

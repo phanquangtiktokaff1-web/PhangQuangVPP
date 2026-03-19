@@ -54,18 +54,19 @@ export function CartPage() {
         {/* Cart items */}
         <div className="lg:col-span-2 space-y-4">
           {cartProducts.map(({ productId, quantity, customization, product }) => {
-            const price = product!.price;
+            if (!product) return null;
+            const price = product.price;
             return (
               <Card key={productId}>
                 <CardContent className="p-4">
                   <div className="flex gap-4">
-                    <Link to={`/product/${product!.slug}`}>
-                      <img src={product!.images[0]?.url} alt={product!.name} className="w-24 h-24 object-cover rounded-md" />
+                    <Link to={`/product/${product.slug}`}>
+                      <img src={product.images[0]?.url} alt={product.name} className="w-24 h-24 object-cover rounded-md" />
                     </Link>
                     <div className="flex-1">
                       <div className="flex justify-between">
                         <div>
-                          <Link to={`/product/${product!.slug}`} className="font-medium hover:text-primary text-foreground">
+                          <Link to={`/product/${product.slug}`} className="font-medium hover:text-primary text-foreground">
                             {product.name}
                           </Link>
                           {customization && (
