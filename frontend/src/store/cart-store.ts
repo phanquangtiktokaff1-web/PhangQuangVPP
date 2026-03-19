@@ -14,8 +14,8 @@ interface CartState {
   note: string;
 
   addItem: (productId: string, quantity?: number, customization?: { type: string; text: string }) => Promise<void>;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (lineItemId: string) => void;
+  updateQuantity: (lineItemId: string, quantity: number) => void;
   clearCart: () => void;
   setShippingAddress: (address: Address) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
@@ -43,12 +43,27 @@ export const useCartStore = create<CartState>()(
       note: '',
 
       addItem: async (productId, quantity = 1, customization) => {
+        const normalizedCustomization = customization
+          ? {
+              type: customization.type.trim(),
+              text: customization.text.trim(),
+            }
+          : undefined;
+        const lineItemId = normalizedCustomization
+          ? `${productId}::${normalizedCustomization.type}::${normalizedCustomization.text}`
+          : `${productId}::default`;
+
+        const getLineItemId = (item: CartItem) =>
+          item.lineItemId || (item.customization
+            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}`
+            : `${item.productId}::default`);
+
         const { items } = get();
-        const existing = items.find(i => i.productId === productId);
+        const existing = items.find(i => getLineItemId(i) === lineItemId);
         if (existing) {
           set({
             items: items.map(i =>
-              i.productId === productId
+              getLineItemId(i) === lineItemId
                 ? { ...i, quantity: i.quantity + quantity }
                 : i
             ),
@@ -61,25 +76,33 @@ export const useCartStore = create<CartState>()(
           const price = product.isFlashSale && product.flashSalePrice
             ? product.flashSalePrice
             : product.price;
-          set({ items: [...get().items, { productId, quantity, customization, price, product }] });
+          set({ items: [...get().items, { lineItemId, productId, quantity, customization: normalizedCustomization, price, product }] });
         } catch {
           // Fallback: add without product data (will show no product in cart UI)
-          set({ items: [...get().items, { productId, quantity, customization }] });
+          set({ items: [...get().items, { lineItemId, productId, quantity, customization: normalizedCustomization }] });
         }
       },
 
-      removeItem: (productId) => {
-        set({ items: get().items.filter(i => i.productId !== productId) });
+      removeItem: (lineItemId) => {
+        const getLineItemId = (item: CartItem) =>
+          item.lineItemId || (item.customization
+            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}`
+            : `${item.productId}::default`);
+        set({ items: get().items.filter(i => getLineItemId(i) !== lineItemId) });
       },
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (lineItemId, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(productId);
+          get().removeItem(lineItemId);
           return;
         }
+        const getLineItemId = (item: CartItem) =>
+          item.lineItemId || (item.customization
+            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}`
+            : `${item.productId}::default`);
         set({
           items: get().items.map(i =>
-            i.productId === productId ? { ...i, quantity } : i
+            getLineItemId(i) === lineItemId ? { ...i, quantity } : i
           ),
         });
       },

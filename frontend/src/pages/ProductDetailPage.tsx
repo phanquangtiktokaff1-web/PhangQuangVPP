@@ -66,6 +66,10 @@ export function ProductDetailPage() {
   const currentPrice = product.price;
 
   const handleAddToCart = async () => {
+    if (product.isCustomizable && (customType || customText) && (!customType || !customText.trim())) {
+      toast.error('Vui lòng chọn loại tùy chỉnh và nhập đầy đủ nội dung in/khắc');
+      return;
+    }
     const customization = customType && customText ? { type: customType, text: customText } : undefined;
     await addItem(product.id, quantity, customization);
     toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);

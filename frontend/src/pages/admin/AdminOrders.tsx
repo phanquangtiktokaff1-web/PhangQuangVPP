@@ -109,7 +109,12 @@ export function AdminOrders() {
                       <div className="text-sm">{order.shippingAddress?.name}</div>
                       <div className="text-xs text-muted-foreground">{order.shippingAddress?.phone}</div>
                     </TableCell>
-                    <TableCell className="text-sm">{order.items?.length} sản phẩm</TableCell>
+                    <TableCell className="text-sm">
+                      {order.items?.length} sản phẩm
+                      {(order.items?.filter(i => i.customization).length ?? 0) > 0 && (
+                        <div className="text-xs text-purple-600 mt-0.5">{order.items.filter(i => i.customization).length} tùy chỉnh</div>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right font-medium">{formatPrice(order.total)}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant={order.paymentStatus === 'paid' ? 'default' : order.paymentStatus === 'refunded' ? 'destructive' : 'outline'}>
@@ -141,6 +146,11 @@ export function AdminOrders() {
                                   <img src={item.productImage} alt="" className="w-12 h-12 rounded object-cover" />
                                   <div className="flex-1">
                                     <div className="text-sm">{item.productName}</div>
+                                    {item.customization && (
+                                      <div className="text-xs text-purple-600 mt-0.5">
+                                        Tùy chỉnh: {item.customization.type} - {item.customization.text}
+                                      </div>
+                                    )}
                                     <div className="text-xs text-muted-foreground">x{item.quantity}</div>
                                   </div>
                                   <div className="text-sm font-medium">{formatPrice(item.price * item.quantity)}</div>

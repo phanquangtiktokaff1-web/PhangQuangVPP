@@ -53,11 +53,14 @@ export function CartPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Cart items */}
         <div className="lg:col-span-2 space-y-4">
-          {cartProducts.map(({ productId, quantity, customization, product }) => {
+          {cartProducts.map(({ lineItemId, productId, quantity, customization, product }) => {
             if (!product) return null;
             const price = product.price;
+            const rowId = lineItemId || (customization
+              ? `${productId}::${customization.type.trim()}::${customization.text.trim()}`
+              : `${productId}::default`);
             return (
-              <Card key={productId}>
+              <Card key={rowId}>
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <Link to={`/product/${product.slug}`}>
@@ -75,18 +78,18 @@ export function CartPage() {
                             </div>
                           )}
                         </div>
-                        <Button variant="ghost" size="icon" className="text-red-500 h-8 w-8" onClick={() => { removeItem(productId); toast.info('Đã xóa sản phẩm'); }}>
+                        <Button variant="ghost" size="icon" className="text-red-500 h-8 w-8" onClick={() => { removeItem(rowId); toast.info('Đã xóa sản phẩm'); }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
 
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center border rounded-md">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(productId, quantity - 1)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(rowId, quantity - 1)}>
                             <Minus className="h-3 w-3" />
                           </Button>
                           <span className="w-10 text-center text-sm">{quantity}</span>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(productId, quantity + 1)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(rowId, quantity + 1)}>
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>

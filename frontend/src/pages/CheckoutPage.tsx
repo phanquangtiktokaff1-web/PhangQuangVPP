@@ -53,7 +53,14 @@ export function CheckoutPage() {
     setSubmitting(true);
     try {
       const orderData = {
-        items: items.map(i => ({ productId: i.productId, quantity: i.quantity, price: i.price ?? i.product?.price ?? 0, customization: i.customization })),
+        items: items.map(i => ({
+          productId: i.productId,
+          productName: i.product?.name || '',
+          productImage: i.product?.images?.[0]?.url || '',
+          quantity: i.quantity,
+          price: i.price ?? i.product?.price ?? 0,
+          customization: i.customization,
+        })),
         shippingAddress: { name: addrName, phone: addrPhone, street: addrStreet, ward: addrWard, district: addrDistrict, city: addrCity },
         paymentMethod,
         shippingMethod,
@@ -271,16 +278,23 @@ export function CheckoutPage() {
             <CardContent className="space-y-4">
               {/* Products */}
               <div className="space-y-3 max-h-60 overflow-y-auto">
-                {cartProducts.filter(i => i.product).map(({ productId, quantity, product }) => {
-                  const price = product!.price;
+                {cartProducts.filter(i => i.product).map(({ lineItemId, productId, quantity, product, customization, price }) => {
+                  const unitPrice = price ?? product?.price ?? 0;
+                  const rowId = lineItemId || (customization
+                    ? `${productId}::${customization.type.trim()}::${customization.text.trim()}`
+                    : `${productId}::default`);
+                  if (!product) return null;
                   return (
-                    <div key={productId} className="flex gap-3">
-                      <img src={product!.images[0]?.url} alt={product!.name} className="w-12 h-12 object-cover rounded" />
+                    <div key={rowId} className="flex gap-3">
+                      <img src={product.images[0]?.url} alt={product.name} className="w-12 h-12 object-cover rounded" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm truncate">{product!.name}</div>
+                        <div className="text-sm truncate">{product.name}</div>
+                        {customization && (
+                          <div className="text-xs text-purple-600 truncate">Tùy chỉnh: {customization.type} - {customization.text}</div>
+                        )}
                         <div className="text-xs text-muted-foreground">x{quantity}</div>
                       </div>
-                      <div className="text-sm font-medium">{formatPrice(price * quantity)}</div>
+                      <div className="text-sm font-medium">{formatPrice(unitPrice * quantity)}</div>
                     </div>
                   );
                 })}

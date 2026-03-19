@@ -140,14 +140,42 @@ router.post('/', authMiddleware, async (req, res, next) => {
       `);
 
     for (const item of items) {
+      const productResult = await pool.request()
+        .input('productId', sql.NVarChar, item.productId)
+        .query('SELECT TOP 1 id, name, images, isCustomizable FROM dbo.products WHERE id = @productId');
+
+      const product = productResult.recordset[0];
+      if (!product) {
+        return res.status(400).json({ message: `Sản phẩm không tồn tại: ${item.productId}` });
+      }
+
+      let normalizedCustomization = null;
+      if (item.customization) {
+        const type = typeof item.customization.type === 'string' ? item.customization.type.trim() : '';
+        const text = typeof item.customization.text === 'string' ? item.customization.text.trim() : '';
+
+        if (!type || !text) {
+          return res.status(400).json({ message: `Thông tin tùy chỉnh không hợp lệ cho sản phẩm: ${product.name}` });
+        }
+
+        if (!product.isCustomizable) {
+          return res.status(400).json({ message: `Sản phẩm không hỗ trợ tùy chỉnh: ${product.name}` });
+        }
+
+        normalizedCustomization = { type, text };
+      }
+
+      const images = safeJsonParse(product.images, []);
+      const productImage = Array.isArray(images) && images[0]?.url ? images[0].url : '';
+
       await pool.request()
         .input('orderId', sql.NVarChar, orderId)
         .input('productId', sql.NVarChar, item.productId)
-        .input('productName', sql.NVarChar, item.productName || '')
-        .input('productImage', sql.NVarChar, item.productImage || '')
+        .input('productName', sql.NVarChar, product.name || item.productName || '')
+        .input('productImage', sql.NVarChar, productImage || item.productImage || '')
         .input('price', sql.Decimal(18, 2), item.price || 0)
         .input('quantity', sql.Int, item.quantity || 1)
-        .input('customization', sql.NVarChar(sql.MAX), JSON.stringify(item.customization || null))
+        .input('customization', sql.NVarChar(sql.MAX), JSON.stringify(normalizedCustomization))
         .query('INSERT INTO dbo.order_items (orderId, productId, productName, productImage, price, quantity, customization) VALUES (@orderId, @productId, @productName, @productImage, @price, @quantity, @customization)');
     }
 

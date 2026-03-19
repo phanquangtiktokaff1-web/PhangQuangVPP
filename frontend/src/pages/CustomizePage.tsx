@@ -25,13 +25,23 @@ export function CustomizePage() {
 
   const addItem = useCartStore(s => s.addItem);
 
+  useEffect(() => {
+    setCustomType('');
+    setCustomText('');
+    setQuantity(1);
+  }, [selectedProduct]);
+
   const handleAddToCart = () => {
     if (!selectedProduct || !customType || !customText) {
       toast.error('Vui lòng chọn sản phẩm và nhập nội dung tùy chỉnh');
       return;
     }
+    if (quantity <= 0) {
+      toast.error('Số lượng phải lớn hơn 0');
+      return;
+    }
     void addItem(selectedProduct, quantity, { type: customType, text: customText });
-    toast.success('Đã thêm sản phẩm tùy chỉnh vào giỏ hàng!');
+    toast.success('Đã thêm sản phẩm tùy chỉnh vào giỏ hàng');
   };
 
   const handleRequestQuote = () => {
@@ -128,6 +138,7 @@ export function CustomizePage() {
                         value={customText}
                         onChange={(e) => setCustomText(e.target.value)}
                       />
+                      <p className="text-xs text-muted-foreground">Nội dung này sẽ hiển thị cho admin trong chi tiết đơn hàng.</p>
                     </div>
 
                     <div className="space-y-2">

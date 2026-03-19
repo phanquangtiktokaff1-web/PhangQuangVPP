@@ -27,7 +27,7 @@ export interface Product {
 }
 export type PaymentMethod = 'cod' | 'bank_transfer' | 'momo' | 'zalopay' | 'vnpay';
 export type ShippingMethod = 'standard' | 'express' | 'same_day';
-export interface CartItem { productId: string; quantity: number; price?: number; product?: Product; customization?: { type: string; text: string } }
+export interface CartItem { lineItemId?: string; productId: string; quantity: number; price?: number; product?: Product; customization?: { type: string; text: string } }
 export interface Address { id: string; name: string; phone: string; street: string; ward?: string; district?: string; city: string; isDefault: boolean; }
 export interface User { id: string; email: string; name: string; phone?: string; avatar?: string; role: 'admin'|'staff'|'customer'; status: 'active'|'locked'; createdAt: string; addresses?: Address[]; }
 export interface OrderItem { productId: string; productName: string; productImage?: string; price: number; quantity: number; customization?: { type: string; text: string } | null; }
