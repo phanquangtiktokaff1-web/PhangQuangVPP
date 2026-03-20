@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, CheckCircle, XCircle, Truck, RotateCcw, Loader2 } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Truck, RotateCcw, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +20,17 @@ const statusConfig: Record<OrderStatus, { label: string; color: string }> = {
   cancelled:  { label: 'Đã hủy',       color: 'bg-red-100 text-red-800' },
   returned:   { label: 'Hoàn hàng',    color: 'bg-orange-100 text-orange-800' },
 };
+
+function getImageFileExtension(dataUrl?: string): string {
+  if (!dataUrl || !dataUrl.startsWith('data:image/')) return 'png';
+  const match = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,/);
+  if (!match?.[1]) return 'png';
+  const subtype = match[1].toLowerCase();
+  if (subtype.includes('jpeg')) return 'jpg';
+  if (subtype.includes('svg')) return 'svg';
+  if (subtype.includes('webp')) return 'webp';
+  return 'png';
+}
 
 export function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -152,7 +163,16 @@ export function AdminOrders() {
                                       </div>
                                     )}
                                     {item.customization?.inputType === 'image' && item.customization.text?.startsWith('data:image/') && (
-                                      <img src={item.customization.text} alt="Logo tùy chỉnh" className="mt-1 h-12 w-12 rounded border object-cover" />
+                                      <div className="mt-1 flex items-center gap-2">
+                                        <img src={item.customization.text} alt="Logo tùy chỉnh" className="h-12 w-12 rounded border object-cover" />
+                                        <a
+                                          href={item.customization.text}
+                                          download={`${order.id}-${item.productId}-logo.${getImageFileExtension(item.customization.text)}`}
+                                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                        >
+                                          <Download className="h-3 w-3" /> Tải logo
+                                        </a>
+                                      </div>
                                     )}
                                     <div className="text-xs text-muted-foreground">x{item.quantity}</div>
                                   </div>
