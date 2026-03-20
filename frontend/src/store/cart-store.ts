@@ -13,7 +13,7 @@ interface CartState {
   voucherDiscount: number;
   note: string;
 
-  addItem: (productId: string, quantity?: number, customization?: { type: string; text: string }) => Promise<void>;
+  addItem: (productId: string, quantity?: number, customization?: { type: string; text: string; extraPrice?: number; inputType?: string }) => Promise<void>;
   removeItem: (lineItemId: string) => void;
   updateQuantity: (lineItemId: string, quantity: number) => void;
   clearCart: () => void;
@@ -47,15 +47,17 @@ export const useCartStore = create<CartState>()(
           ? {
               type: customization.type.trim(),
               text: customization.text.trim(),
+              extraPrice: Number(customization.extraPrice || 0),
+              inputType: customization.inputType,
             }
           : undefined;
         const lineItemId = normalizedCustomization
-          ? `${productId}::${normalizedCustomization.type}::${normalizedCustomization.text}`
+          ? `${productId}::${normalizedCustomization.type}::${normalizedCustomization.text}::${normalizedCustomization.extraPrice || 0}`
           : `${productId}::default`;
 
         const getLineItemId = (item: CartItem) =>
           item.lineItemId || (item.customization
-            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}`
+            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}::${item.customization.extraPrice || 0}`
             : `${item.productId}::default`);
 
         const { items } = get();
@@ -73,9 +75,11 @@ export const useCartStore = create<CartState>()(
         // Fetch the product to store price and data inline
         try {
           const product = await catalogApi.getProduct(productId);
-          const price = product.isFlashSale && product.flashSalePrice
+          const basePrice = product.isFlashSale && product.flashSalePrice
             ? product.flashSalePrice
             : product.price;
+          const customExtra = normalizedCustomization?.extraPrice || 0;
+          const price = basePrice + customExtra;
           set({ items: [...get().items, { lineItemId, productId, quantity, customization: normalizedCustomization, price, product }] });
         } catch {
           // Fallback: add without product data (will show no product in cart UI)
@@ -86,7 +90,7 @@ export const useCartStore = create<CartState>()(
       removeItem: (lineItemId) => {
         const getLineItemId = (item: CartItem) =>
           item.lineItemId || (item.customization
-            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}`
+            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}::${item.customization.extraPrice || 0}`
             : `${item.productId}::default`);
         set({ items: get().items.filter(i => getLineItemId(i) !== lineItemId) });
       },
@@ -98,7 +102,7 @@ export const useCartStore = create<CartState>()(
         }
         const getLineItemId = (item: CartItem) =>
           item.lineItemId || (item.customization
-            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}`
+            ? `${item.productId}::${item.customization.type.trim()}::${item.customization.text.trim()}::${item.customization.extraPrice || 0}`
             : `${item.productId}::default`);
         set({
           items: get().items.map(i =>

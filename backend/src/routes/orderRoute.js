@@ -196,6 +196,31 @@ function buildOrdersFromRows(orders, items, timelines) {
   }));
 }
 
+function normalizeProductCustomizationOptions(rawOptions) {
+  const parsed = safeJsonParse(rawOptions, []);
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((option) => {
+      if (typeof option === 'string') {
+        const label = option.trim();
+        if (!label) return null;
+        return { label, inputType: 'text', extraPrice: 0 };
+      }
+
+      if (!option || typeof option !== 'object') return null;
+      const label = String(option.label || '').trim();
+      if (!label) return null;
+
+      return {
+        label,
+        inputType: ['text', 'image'].includes(String(option.inputType || '')) ? String(option.inputType) : 'text',
+        extraPrice: option.extraPrice && Number.isFinite(Number(option.extraPrice)) ? Number(option.extraPrice) : 0,
+      };
+    })
+    .filter(Boolean);
+}
+
 // ==================== CUSTOMER ====================
 
 router.get('/my-orders', authMiddleware, async (req, res, next) => {
@@ -227,13 +252,17 @@ router.post('/', authMiddleware, async (req, res, next) => {
     const orderId = `ORD-${Date.now().toString().slice(-8)}`;
     const pool = await getPool();
 
+    const normalizedShippingFee = Number(shippingFee || 0);
+    const normalizedDiscount = Number(discount || 0);
+    let computedSubtotal = 0;
+
     await pool.request()
       .input('id', sql.NVarChar, orderId)
       .input('userId', sql.NVarChar, req.user.userId)
-      .input('subtotal', sql.Decimal(18, 2), subtotal || 0)
-      .input('shippingFee', sql.Decimal(18, 2), shippingFee || 0)
-      .input('discount', sql.Decimal(18, 2), discount || 0)
-      .input('total', sql.Decimal(18, 2), total || 0)
+      .input('subtotal', sql.Decimal(18, 2), 0)
+      .input('shippingFee', sql.Decimal(18, 2), normalizedShippingFee)
+      .input('discount', sql.Decimal(18, 2), normalizedDiscount)
+      .input('total', sql.Decimal(18, 2), 0)
       .input('status', sql.NVarChar, 'pending')
       .input('paymentMethod', sql.NVarChar, normalizedPaymentMethod)
       .input('paymentStatus', sql.NVarChar, 'pending')
@@ -255,7 +284,7 @@ router.post('/', authMiddleware, async (req, res, next) => {
     for (const item of items) {
       const productResult = await pool.request()
         .input('productId', sql.NVarChar, item.productId)
-        .query('SELECT TOP 1 id, name, images, isCustomizable FROM dbo.products WHERE id = @productId');
+        .query('SELECT TOP 1 id, name, images, price, isCustomizable, customizationOptions FROM dbo.products WHERE id = @productId');
 
       const product = productResult.recordset[0];
       if (!product) {
@@ -263,11 +292,12 @@ router.post('/', authMiddleware, async (req, res, next) => {
       }
 
       let normalizedCustomization = null;
+      let enforcedExtraPrice = 0;
       if (item.customization) {
         const type = typeof item.customization.type === 'string' ? item.customization.type.trim() : '';
         const text = typeof item.customization.text === 'string' ? item.customization.text.trim() : '';
 
-        if (!type || !text) {
+        if (!type) {
           return res.status(400).json({ message: `Thông tin tùy chỉnh không hợp lệ cho sản phẩm: ${product.name}` });
         }
 
@@ -275,8 +305,38 @@ router.post('/', authMiddleware, async (req, res, next) => {
           return res.status(400).json({ message: `Sản phẩm không hỗ trợ tùy chỉnh: ${product.name}` });
         }
 
-        normalizedCustomization = { type, text };
+        const allowedOptions = normalizeProductCustomizationOptions(product.customizationOptions);
+        let selectedOption = null;
+        if (allowedOptions.length > 0) {
+          selectedOption = allowedOptions.find((opt) => opt.label.toLowerCase() === type.toLowerCase()) || null;
+          if (!selectedOption) {
+            return res.status(400).json({ message: `Loại tùy chỉnh không hợp lệ cho sản phẩm: ${product.name}` });
+          }
+        }
+
+        if (!text) {
+          return res.status(400).json({ message: `Vui lòng nhập nội dung tùy chỉnh cho sản phẩm: ${product.name}` });
+        }
+
+        if (selectedOption?.inputType === 'image' && !text.startsWith('data:image/')) {
+          return res.status(400).json({ message: `Ảnh tùy chỉnh không hợp lệ cho sản phẩm: ${product.name}` });
+        }
+
+        normalizedCustomization = {
+          type,
+          text,
+          inputType: selectedOption?.inputType || 'text',
+          extraPrice: selectedOption?.extraPrice || 0,
+        };
+        enforcedExtraPrice = selectedOption?.extraPrice || 0;
       }
+
+      const requestedUnitPrice = Number(item.price || 0);
+      const fallbackBasePrice = Number(product.price || 0);
+      const minimumValidPrice = fallbackBasePrice + enforcedExtraPrice;
+      const finalUnitPrice = Math.max(requestedUnitPrice, minimumValidPrice);
+      const quantityValue = Number(item.quantity || 1);
+      computedSubtotal += finalUnitPrice * quantityValue;
 
       const images = safeJsonParse(product.images, []);
       const productImage = Array.isArray(images) && images[0]?.url ? images[0].url : '';
@@ -286,11 +346,18 @@ router.post('/', authMiddleware, async (req, res, next) => {
         .input('productId', sql.NVarChar, item.productId)
         .input('productName', sql.NVarChar, product.name || item.productName || '')
         .input('productImage', sql.NVarChar, productImage || item.productImage || '')
-        .input('price', sql.Decimal(18, 2), item.price || 0)
-        .input('quantity', sql.Int, item.quantity || 1)
+        .input('price', sql.Decimal(18, 2), finalUnitPrice)
+        .input('quantity', sql.Int, quantityValue)
         .input('customization', sql.NVarChar(sql.MAX), JSON.stringify(normalizedCustomization))
         .query('INSERT INTO dbo.order_items (orderId, productId, productName, productImage, price, quantity, customization) VALUES (@orderId, @productId, @productName, @productImage, @price, @quantity, @customization)');
     }
+
+    const computedTotal = Math.max(0, computedSubtotal + normalizedShippingFee - normalizedDiscount);
+    await pool.request()
+      .input('id', sql.NVarChar, orderId)
+      .input('subtotal', sql.Decimal(18, 2), computedSubtotal)
+      .input('total', sql.Decimal(18, 2), computedTotal)
+      .query('UPDATE dbo.orders SET subtotal = @subtotal, total = @total WHERE id = @id');
 
     await pool.request()
       .input('orderId', sql.NVarChar, orderId)
@@ -309,7 +376,7 @@ router.post('/', authMiddleware, async (req, res, next) => {
         return res.status(500).json({ message: 'VNPay chưa được cấu hình trên server' });
       }
 
-      const payableAmount = Math.round(Number(total || 0));
+      const payableAmount = Math.round(Number(computedTotal || 0));
       if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
         return res.status(400).json({ message: 'Số tiền thanh toán không hợp lệ' });
       }

@@ -289,7 +289,7 @@ export function CheckoutPage() {
                 {cartProducts.filter(i => i.product).map(({ lineItemId, productId, quantity, product, customization, price }) => {
                   const unitPrice = price ?? product?.price ?? 0;
                   const rowId = lineItemId || (customization
-                    ? `${productId}::${customization.type.trim()}::${customization.text.trim()}`
+                    ? `${productId}::${customization.type.trim()}::${customization.text.trim()}::${customization.extraPrice || 0}`
                     : `${productId}::default`);
                   if (!product) return null;
                   return (
@@ -298,8 +298,16 @@ export function CheckoutPage() {
                       <div className="flex-1 min-w-0">
                         <div className="text-sm truncate">{product.name}</div>
                         {customization && (
-                          <div className="text-xs text-purple-600 truncate">Tùy chỉnh: {customization.type} - {customization.text}</div>
+                          <div className="text-xs text-purple-600 truncate">
+                            Tùy chỉnh: {customization.type} - {customization.inputType === 'image' ? 'Ảnh thiết kế' : customization.text}
+                          </div>
                         )}
+                        {customization?.inputType === 'image' && customization.text.startsWith('data:image/') && (
+                          <img src={customization.text} alt="Ảnh tùy chỉnh" className="mt-1 h-10 w-10 rounded border object-cover" />
+                        )}
+                        {customization?.extraPrice ? (
+                          <div className="text-xs text-amber-700 truncate">Phụ phí: +{formatPrice(customization.extraPrice)} / sản phẩm</div>
+                        ) : null}
                         <div className="text-xs text-muted-foreground">x{quantity}</div>
                       </div>
                       <div className="text-sm font-medium">{formatPrice(unitPrice * quantity)}</div>

@@ -87,8 +87,14 @@ function OrderDetail({ order, onClose }: { order: Order; onClose: () => void }) 
                     <div className="font-medium text-sm">{item.productName}</div>
                     {item.customization && (
                       <div className="text-xs text-purple-600 flex items-center gap-1 mt-0.5">
-                        <Sparkles className="h-3 w-3" /> {item.customization.type}: {item.customization.text}
+                        <Sparkles className="h-3 w-3" />
+                        {item.customization.inputType === 'image'
+                          ? `${item.customization.type}: Ảnh thiết kế`
+                          : `${item.customization.type}: ${item.customization.text}`}
                       </div>
+                    )}
+                    {item.customization?.inputType === 'image' && item.customization.text?.startsWith('data:image/') && (
+                      <img src={item.customization.text} alt="Logo tùy chỉnh" className="mt-1 h-12 w-12 rounded border object-cover" />
                     )}
                     <div className="text-sm text-muted-foreground">x{item.quantity} × {formatPrice(item.price)}</div>
                   </div>
@@ -110,7 +116,16 @@ function OrderDetail({ order, onClose }: { order: Order; onClose: () => void }) 
                     <div key={`${item.productId}-${idx}`} className="rounded-lg border border-purple-200 bg-purple-50 p-3">
                       <div className="text-sm font-medium text-foreground">{item.productName}</div>
                       <div className="text-xs text-purple-700 mt-1">Loại: {item.customization?.type}</div>
-                      <div className="text-sm text-purple-900 mt-1">Nội dung: {item.customization?.text}</div>
+                      {item.customization?.inputType === 'image' ? (
+                        <div className="mt-1">
+                          <div className="text-xs text-purple-700 mb-1">Nội dung: Ảnh thiết kế</div>
+                          {item.customization.text?.startsWith('data:image/') && (
+                            <img src={item.customization.text} alt="Logo tùy chỉnh" className="h-20 w-20 rounded border object-cover" />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-purple-900 mt-1">Nội dung: {item.customization?.text}</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -252,8 +267,14 @@ export function OrdersPage() {
                               <div className="font-medium text-sm">{item.productName}</div>
                               {item.customization && (
                                 <div className="text-xs text-purple-600 flex items-center gap-1">
-                                  <Sparkles className="h-3 w-3" /> {item.customization.type}: {item.customization.text}
+                                  <Sparkles className="h-3 w-3" />
+                                  {item.customization.inputType === 'image'
+                                    ? `${item.customization.type}: Ảnh thiết kế`
+                                    : `${item.customization.type}: ${item.customization.text}`}
                                 </div>
+                              )}
+                              {item.customization?.inputType === 'image' && item.customization.text?.startsWith('data:image/') && (
+                                <img src={item.customization.text} alt="Logo tùy chỉnh" className="mt-1 h-10 w-10 rounded border object-cover" />
                               )}
                               <div className="text-sm text-muted-foreground">x{item.quantity}</div>
                             </div>
@@ -273,7 +294,7 @@ export function OrdersPage() {
                           <div className="space-y-1">
                             {customizedItems.slice(0, 2).map((item, idx) => (
                               <p key={`${item.productId}-${idx}`} className="text-xs text-purple-900">
-                                {item.productName}: {item.customization?.type} - {item.customization?.text}
+                                {item.productName}: {item.customization?.type} - {item.customization?.inputType === 'image' ? 'Ảnh thiết kế' : item.customization?.text}
                               </p>
                             ))}
                             {customizedItems.length > 2 && (

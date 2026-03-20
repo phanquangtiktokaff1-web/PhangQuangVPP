@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { catalogApi, chatApi, formatPrice, type Product } from '@/lib/api-service';
+import { catalogApi, chatApi, formatPrice, normalizeCustomizationOptions, type Product } from '@/lib/api-service';
 import { useCartStore } from '@/store/cart-store';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from 'sonner';
@@ -36,6 +36,11 @@ export function CustomizePage() {
     setQuantity(1);
   }, [selectedProduct]);
 
+  const selectedProductData = customizableProducts.find(p => p.id === selectedProduct) || null;
+  const selectedOptions = normalizeCustomizationOptions(selectedProductData?.customizationOptions);
+  const selectedOption = selectedOptions.find(opt => opt.key === customType) || null;
+  const selectedExtraPrice = selectedOption?.extraPrice || 0;
+
   const handleAddToCart = () => {
     if (!selectedProduct || !customType || !customText) {
       toast.error('Vui lòng chọn sản phẩm và nhập nội dung tùy chỉnh');
@@ -45,9 +50,18 @@ export function CustomizePage() {
       toast.error('Số lượng phải lớn hơn 0');
       return;
     }
-    void addItem(selectedProduct, quantity, { type: customType, text: customText });
+    void addItem(selectedProduct, quantity, {
+      type: selectedOption?.label || customType,
+      text: customText.trim(),
+      extraPrice: selectedExtraPrice,
+      inputType: selectedOption?.inputType,
+    });
     toast.success('Đã thêm sản phẩm tùy chỉnh vào giỏ hàng');
   };
+
+  useEffect(() => {
+    setCustomText('');
+  }, [customType]);
 
   const handleRequestQuote = async () => {
     if (!contactName || !contactPhone) {
@@ -62,13 +76,13 @@ export function CustomizePage() {
 
     setSendingQuote(true);
     try {
-      const selectedProductName = customizableProducts.find(p => p.id === selectedProduct)?.name || 'Chua chon';
+      const selectedProductName = selectedProductData?.name || 'Chua chon';
       const messageLines = [
         '[YEU_CAU_BAO_GIA_TUY_CHINH]',
         `Nguoi lien he: ${contactName}`,
         `So dien thoai: ${contactPhone}`,
         `San pham quan tam: ${selectedProductName}`,
-        `Loai tuy chinh: ${customType || 'Chua chon'}`,
+        `Loai tuy chinh: ${selectedOption?.label || customType || 'Chua chon'}`,
         `Noi dung tuy chinh: ${customText || 'Chua nhap'}`,
         `So luong du kien: ${quantity}`,
         `Yeu cau: ${contactNote || 'Khong co'}`,
@@ -90,10 +104,9 @@ export function CustomizePage() {
           <Badge className="bg-white/20 text-white border-0 mb-4 text-lg px-4 py-1">
             <Sparkles className="h-5 w-5 mr-1" /> Tùy chỉnh sản phẩm
           </Badge>
-          <h1 className="text-4xl font-bold mb-4">In tên, logo lên sản phẩm</h1>
+          <h1 className="text-4xl font-bold mb-4">Cá nhân hóa sản phẩm theo nhu cầu</h1>
           <p className="text-lg opacity-90 max-w-2xl mx-auto">
-            Tạo dấu ấn riêng cho doanh nghiệp với dịch vụ in ấn, khắc laser trên bút, sổ tay, cốc đựng bút. 
-            Phù hợp cho quà tặng doanh nghiệp, sự kiện, hội nghị.
+            Mỗi sản phẩm có thể hỗ trợ các kiểu tùy chỉnh khác nhau do admin cấu hình, từ in ấn, khắc, dập nổi đến các nội dung theo chiến dịch riêng.
           </p>
         </div>
       </section>
@@ -113,10 +126,10 @@ export function CustomizePage() {
                       <span className="font-bold text-red-600 text-sm">{formatPrice(product.price)}</span>
                       <Badge variant="secondary" className="text-xs gap-1"><Sparkles className="h-3 w-3" />Tùy chỉnh</Badge>
                     </div>
-                    {product.customizationOptions && (
+                    {normalizeCustomizationOptions(product.customizationOptions).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {product.customizationOptions.map(opt => (
-                          <Badge key={opt} variant="outline" className="text-xs">{opt}</Badge>
+                        {normalizeCustomizationOptions(product.customizationOptions).map(opt => (
+                          <Badge key={opt.key} variant="outline" className="text-xs">{opt.label}{opt.extraPrice ? ` (+${formatPrice(opt.extraPrice)})` : ''}</Badge>
                         ))}
                       </div>
                     )}
@@ -154,8 +167,8 @@ export function CustomizePage() {
                           <SelectValue placeholder="Chọn loại tùy chỉnh" />
                         </SelectTrigger>
                         <SelectContent>
-                          {customizableProducts.find(p => p.id === selectedProduct)?.customizationOptions?.map(opt => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          {selectedOptions.map(opt => (
+                            <SelectItem key={opt.key} value={opt.key}>{opt.label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -163,12 +176,32 @@ export function CustomizePage() {
 
                     <div className="space-y-2">
                       <Label>Nội dung in/khắc</Label>
-                      <Input
-                        placeholder="VD: Công ty ABC, Nguyễn Văn A..."
-                        value={customText}
-                        onChange={(e) => setCustomText(e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">Nội dung này sẽ hiển thị cho admin trong chi tiết đơn hàng.</p>
+                      {selectedOption?.inputType === 'image' ? (
+                        <div className="space-y-2">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => setCustomText(String(reader.result || ''));
+                              reader.readAsDataURL(file);
+                            }}
+                          />
+                          {customText && (
+                            <img src={customText} alt="Ảnh tùy chỉnh" className="h-28 w-28 rounded border object-cover" />
+                          )}
+                        </div>
+                      ) : (
+                        <Input
+                          placeholder={selectedOption?.placeholder || 'VD: Công ty ABC, Nguyễn Văn A...'}
+                          value={customText}
+                          onChange={(e) => setCustomText(e.target.value)}
+                        />
+                      )}
+                      <p className="text-xs text-muted-foreground">{selectedOption?.helpText || 'Nội dung này sẽ hiển thị cho admin trong chi tiết đơn hàng.'}</p>
+                      {selectedExtraPrice > 0 && <p className="text-xs text-amber-700">Phụ phí tùy chỉnh: +{formatPrice(selectedExtraPrice)} / sản phẩm</p>}
                     </div>
 
                     <div className="space-y-2">
@@ -186,8 +219,13 @@ export function CustomizePage() {
                       <div className="p-4 bg-gray-50 rounded-lg border-2 border-dashed">
                         <Label className="text-xs text-muted-foreground mb-2 block">Xem trước</Label>
                         <div className="text-center">
-                          <div className="text-lg font-semibold text-primary">{customText}</div>
-                          <div className="text-xs text-muted-foreground mt-1">{customType}</div>
+                          {selectedOption?.inputType === 'image' ? (
+                            <img src={customText} alt="Ảnh tùy chỉnh" className="mx-auto h-28 w-28 rounded border object-cover" />
+                          ) : (
+                            <div className="text-lg font-semibold text-primary">{customText}</div>
+                          )}
+                          <div className="text-xs text-muted-foreground mt-1">{selectedOption?.label || customType}</div>
+                          {selectedExtraPrice > 0 && <div className="text-xs text-amber-700 mt-1">+{formatPrice(selectedExtraPrice)} / sản phẩm</div>}
                         </div>
                       </div>
                     )}

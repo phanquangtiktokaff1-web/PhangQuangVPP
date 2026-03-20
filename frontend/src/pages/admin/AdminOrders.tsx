@@ -148,8 +148,11 @@ export function AdminOrders() {
                                     <div className="text-sm">{item.productName}</div>
                                     {item.customization && (
                                       <div className="text-xs text-purple-600 mt-0.5">
-                                        Tùy chỉnh: {item.customization.type} - {item.customization.text}
+                                        Tùy chỉnh: {item.customization.type} - {item.customization.inputType === 'image' ? 'Ảnh thiết kế' : item.customization.text}
                                       </div>
+                                    )}
+                                    {item.customization?.inputType === 'image' && item.customization.text?.startsWith('data:image/') && (
+                                      <img src={item.customization.text} alt="Logo tùy chỉnh" className="mt-1 h-12 w-12 rounded border object-cover" />
                                     )}
                                     <div className="text-xs text-muted-foreground">x{item.quantity}</div>
                                   </div>

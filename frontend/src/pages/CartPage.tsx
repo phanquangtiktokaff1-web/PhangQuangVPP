@@ -57,7 +57,7 @@ export function CartPage() {
             if (!product) return null;
             const price = product.price;
             const rowId = lineItemId || (customization
-              ? `${productId}::${customization.type.trim()}::${customization.text.trim()}`
+              ? `${productId}::${customization.type.trim()}::${customization.text.trim()}::${customization.extraPrice || 0}`
               : `${productId}::default`);
             return (
               <Card key={rowId}>
@@ -74,9 +74,18 @@ export function CartPage() {
                           </Link>
                           {customization && (
                             <div className="text-xs text-purple-600 mt-1 flex items-center gap-1">
-                              <Sparkles className="h-3 w-3" /> {customization.type}: {customization.text}
+                              <Sparkles className="h-3 w-3" />
+                              {customization.inputType === 'image'
+                                ? `${customization.type}: Ảnh thiết kế`
+                                : `${customization.type}: ${customization.text}`}
                             </div>
                           )}
+                          {customization?.inputType === 'image' && customization.text.startsWith('data:image/') && (
+                            <img src={customization.text} alt="Ảnh tùy chỉnh" className="mt-1 h-12 w-12 rounded border object-cover" />
+                          )}
+                          {customization?.extraPrice ? (
+                            <div className="text-xs text-amber-700 mt-1">Phụ phí tùy chỉnh: +{formatPrice(customization.extraPrice)} / sản phẩm</div>
+                          ) : null}
                         </div>
                         <Button variant="ghost" size="icon" className="text-red-500 h-8 w-8" onClick={() => { removeItem(rowId); toast.info('Đã xóa sản phẩm'); }}>
                           <Trash2 className="h-4 w-4" />

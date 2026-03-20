@@ -13,6 +13,14 @@ export interface Brand { id: string; name: string; logo?: string; }
 export interface ProductImage { id: string; url: string; alt: string; }
 export interface ProductReview { id: string; userId: string; userName: string; userAvatar: string; rating: number; comment: string; helpful: number; isVerifiedPurchase: boolean; createdAt: string; }
 export interface WholesalePrice { minQty: number; price: number; }
+export interface ProductCustomizationOption {
+  key: string;
+  label: string;
+  inputType?: 'text' | 'image';
+  placeholder?: string;
+  helpText?: string;
+  extraPrice?: number;
+}
 export interface Product {
   id: string; name: string; slug: string; sku: string;
   categoryId: string; brandId: string;
@@ -21,16 +29,23 @@ export interface Product {
   stock: number; sold: number; rating: number; reviewCount: number;
   reviews: ProductReview[]; colors: string[]; tags: string[];
   isFlashSale: boolean; flashSaleEnd?: string; flashSalePrice?: number;
-  isCustomizable: boolean; customizationOptions?: string[];
+  isCustomizable: boolean; customizationOptions?: Array<string | ProductCustomizationOption>;
   wholesalePrice?: WholesalePrice[];
   status: 'active' | 'inactive'; createdAt: string;
 }
 export type PaymentMethod = 'cod' | 'vnpay';
 export type ShippingMethod = 'standard' | 'express' | 'same_day';
-export interface CartItem { lineItemId?: string; productId: string; quantity: number; price?: number; product?: Product; customization?: { type: string; text: string } }
+export interface CartItem { lineItemId?: string; productId: string; quantity: number; price?: number; product?: Product; customization?: { type: string; text: string; extraPrice?: number; inputType?: string } }
 export interface Address { id: string; name: string; phone: string; street: string; ward?: string; district?: string; city: string; isDefault: boolean; }
 export interface User { id: string; email: string; name: string; phone?: string; avatar?: string; role: 'admin'|'staff'|'customer'; status: 'active'|'locked'; createdAt: string; addresses?: Address[]; }
-export interface OrderItem { productId: string; productName: string; productImage?: string; price: number; quantity: number; customization?: { type: string; text: string } | null; }
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  price: number;
+  quantity: number;
+  customization?: { type: string; text: string; inputType?: string; extraPrice?: number } | null;
+}
 export interface Order {
   id: string; userId: string; subtotal: number; shippingFee: number; discount: number; total: number;
   status: OrderStatus; paymentMethod: string; paymentStatus: string; shippingMethod: string;
@@ -48,6 +63,47 @@ export interface ChatConversation { userId: string; userName: string; userAvatar
 
 export function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+}
+
+export function normalizeCustomizationOptions(options?: Array<string | ProductCustomizationOption>): ProductCustomizationOption[] {
+  if (!Array.isArray(options)) return [];
+
+  const normalized: ProductCustomizationOption[] = [];
+  options.forEach((option, index) => {
+    if (typeof option === 'string') {
+      const label = option.trim();
+      if (!label) return;
+      normalized.push({
+        key: `custom-${index}`,
+        label,
+        inputType: 'text',
+      });
+      return;
+    }
+
+    if (!option || typeof option !== 'object') return;
+    const label = String(option.label || '').trim();
+    if (!label) return;
+
+    const key = String(option.key || '').trim() || `custom-${index}`;
+      const inputType = ['text', 'image'].includes(String(option.inputType || ''))
+        ? (option.inputType as 'text' | 'image')
+        : 'text';
+    const placeholder = option.placeholder ? String(option.placeholder).trim() : undefined;
+    const helpText = option.helpText ? String(option.helpText).trim() : undefined;
+      const extraPrice = option.extraPrice && Number.isFinite(Number(option.extraPrice)) ? Number(option.extraPrice) : 0;
+
+    normalized.push({
+      key,
+      label,
+        inputType,
+      placeholder,
+      helpText,
+        extraPrice,
+    });
+  });
+
+  return normalized;
 }
 
 // ─── Catalog ─────────────────────────────────────────────────────────────────

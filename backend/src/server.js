@@ -35,7 +35,7 @@ app.set('io', io);
 
 // ── Express Middleware ───────────────────────────────────────────────────────
 app.use(cors());
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '12mb' }));
 
 // Health check
 app.get('/api/health', (_req, res) => {

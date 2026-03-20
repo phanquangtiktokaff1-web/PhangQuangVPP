@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { ProductCard } from '@/components/product/ProductCard';
-import { catalogApi, formatPrice, type Product } from '@/lib/api-service';
+import { catalogApi, formatPrice, normalizeCustomizationOptions, type Product } from '@/lib/api-service';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useAuthStore } from '@/store/auth-store';
@@ -61,6 +61,10 @@ export function ProductDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
+  useEffect(() => {
+    setCustomText('');
+  }, [customType]);
+
   if (loading) return <div className="container mx-auto px-4 py-16 text-center text-muted-foreground">Đang tải...</div>;
 
   if (!product) {
@@ -74,13 +78,19 @@ export function ProductDetailPage() {
 
   const inWishlist = isInWishlist(product.id);
   const currentPrice = product.price;
+  const customizationOptions = normalizeCustomizationOptions(product.customizationOptions);
+  const selectedCustomization = customizationOptions.find(opt => opt.key === customType);
+  const customizationExtraPrice = selectedCustomization?.extraPrice || 0;
+  const effectiveUnitPrice = currentPrice + customizationExtraPrice;
 
   const handleAddToCart = async () => {
     if (product.isCustomizable && (customType || customText) && (!customType || !customText.trim())) {
-      toast.error('Vui lòng chọn loại tùy chỉnh và nhập đầy đủ nội dung in/khắc');
+      toast.error('Vui lòng chọn loại tùy chỉnh và nhập đầy đủ nội dung tùy chỉnh');
       return;
     }
-    const customization = customType && customText ? { type: customType, text: customText } : undefined;
+    const customization = selectedCustomization && customText
+      ? { type: selectedCustomization.label, text: customText.trim(), extraPrice: customizationExtraPrice, inputType: selectedCustomization.inputType }
+      : undefined;
     await addItem(product.id, quantity, customization);
     toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
   };
@@ -185,7 +195,7 @@ export function ProductDetailPage() {
           {/* Price */}
           <div className="bg-gray-50 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-rose-600">{formatPrice(currentPrice)}</span>
+              <span className="text-3xl font-bold text-rose-600">{formatPrice(effectiveUnitPrice)}</span>
               {currentPrice < product.originalPrice && (
                 <>
                   <span className="text-lg text-muted-foreground line-through">{formatPrice(product.originalPrice)}</span>
@@ -193,6 +203,9 @@ export function ProductDetailPage() {
                 </>
               )}
             </div>
+            {customizationExtraPrice > 0 && (
+              <div className="text-xs text-muted-foreground mt-1">Giá gốc {formatPrice(currentPrice)} + phụ phí tùy chỉnh {formatPrice(customizationExtraPrice)}</div>
+            )}
           </div>
 
           {/* Color selection */}
@@ -215,7 +228,7 @@ export function ProductDetailPage() {
           )}
 
           {/* Customization */}
-          {product.isCustomizable && product.customizationOptions && (
+          {product.isCustomizable && customizationOptions.length > 0 && (
             <div className="mb-4 p-4 border rounded-lg bg-purple-50">
               <Label className="mb-2 block font-semibold flex items-center gap-1"><Sparkles className="h-4 w-4" /> Tùy chỉnh sản phẩm</Label>
               <div className="space-y-3">
@@ -224,17 +237,41 @@ export function ProductDetailPage() {
                     <SelectValue placeholder="Chọn loại tùy chỉnh" />
                   </SelectTrigger>
                   <SelectContent>
-                    {product.customizationOptions.map(opt => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    {customizationOptions.map(opt => (
+                      <SelectItem key={opt.key} value={opt.key}>{opt.label}{opt.extraPrice ? ` (+${formatPrice(opt.extraPrice)})` : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {customType && (
-                  <Input
-                    placeholder="Nhập nội dung cần in/khắc..."
-                    value={customText}
-                    onChange={(e) => setCustomText(e.target.value)}
-                  />
+                  <div className="space-y-1">
+                    {selectedCustomization?.inputType === 'image' ? (
+                      <div className="space-y-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => setCustomText(String(reader.result || ''));
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                        {customText && (
+                          <img src={customText} alt="Ảnh tùy chỉnh" className="h-28 w-28 rounded border object-cover" />
+                        )}
+                      </div>
+                    ) : (
+                      <Input
+                        placeholder={selectedCustomization?.placeholder || 'Nhập nội dung tùy chỉnh...'}
+                        value={customText}
+                        onChange={(e) => setCustomText(e.target.value)}
+                      />
+                    )}
+                    {selectedCustomization?.helpText && (
+                      <p className="text-xs text-muted-foreground">{selectedCustomization.helpText}</p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
