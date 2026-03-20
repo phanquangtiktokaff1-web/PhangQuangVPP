@@ -31,6 +31,7 @@ const io = new SocketIOServer(httpServer, {
   connectionStateRecovery: {},
 });
 attachSocketIO(io);
+app.set('io', io);
 
 // ── Express Middleware ───────────────────────────────────────────────────────
 app.use(cors());

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { chatApi, type ChatMessage, type ChatConversation } from '@/lib/api-service';
-import { getSocket } from '@/lib/socket';
+import { connectSocket, getSocket } from '@/lib/socket';
 import { useAuthStore } from '@/store/auth-store';
 
 const quoteTagMap: Record<string, { label: string; className: string }> = {
@@ -36,7 +36,7 @@ function timeAgo(isoStr: string): string {
 }
 
 export function AdminChat() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -76,7 +76,7 @@ export function AdminChat() {
 
   // Realtime socket subscription
   useEffect(() => {
-    const socket = getSocket();
+    const socket = token ? connectSocket(token) : getSocket();
     if (!socket) return;
 
     const handler = (msg: ChatMessage) => {
@@ -109,7 +109,7 @@ export function AdminChat() {
     socket.on('new_message', handler);
     return () => { socket.off('new_message', handler); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedUserId]);
+  }, [selectedUserId, token]);
 
   // Scroll to bottom on new messages
   useEffect(() => {

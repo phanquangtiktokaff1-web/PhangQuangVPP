@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/auth-store';
 import { chatApi, type ChatMessage } from '@/lib/api-service';
-import { getSocket } from '@/lib/socket';
+import { connectSocket, getSocket } from '@/lib/socket';
 
 export function ChatWidget() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, token } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -33,7 +33,8 @@ export function ChatWidget() {
 
   // Subscribe to realtime messages via socket
   useEffect(() => {
-    const socket = getSocket();
+    if (!isAuthenticated) return;
+    const socket = token ? connectSocket(token) : getSocket();
     if (!socket) return;
 
     const handler = (msg: ChatMessage) => {
@@ -49,7 +50,7 @@ export function ChatWidget() {
 
     socket.on('new_message', handler);
     return () => { socket.off('new_message', handler); };
-  }, [open]);
+  }, [open, isAuthenticated, token]);
 
   // Scroll to bottom on new messages
   useEffect(() => {

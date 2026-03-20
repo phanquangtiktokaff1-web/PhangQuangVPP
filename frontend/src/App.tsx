@@ -1,8 +1,10 @@
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router';
+import { useEffect } from 'react';
 import { Toaster } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ScrollToTop } from '@/components/layout/ScrollToTop';
 import { useAuthStore } from '@/store/auth-store';
+import { connectSocket, disconnectSocket } from '@/lib/socket';
 
 // Layouts
 import { CustomerLayout } from '@/components/layout/CustomerLayout';
@@ -46,6 +48,16 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const { isAuthenticated, token } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      connectSocket(token);
+      return;
+    }
+    disconnectSocket();
+  }, [isAuthenticated, token]);
+
   return (
     <>
       <Toaster richColors position="top-right" />

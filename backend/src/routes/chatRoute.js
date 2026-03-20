@@ -97,17 +97,41 @@ router.post('/messages', authMiddleware, async (req, res, next) => {
     const senderName = userResult.recordset[0]?.name || req.user.email;
 
     const id = `msg-${Date.now()}`;
+    const messageText = message.trim();
+    const timestamp = new Date().toISOString();
     await pool.request()
       .input('id', sql.NVarChar, id)
       .input('senderId', sql.NVarChar, req.user.userId)
       .input('senderName', sql.NVarChar, senderName)
       .input('senderRole', sql.NVarChar, isAdmin ? 'admin' : 'customer')
       .input('targetUserId', sql.NVarChar, isAdmin ? targetUserId : null)
-      .input('message', sql.NVarChar(sql.MAX), message.trim())
+      .input('message', sql.NVarChar(sql.MAX), messageText)
       .query(`
         INSERT INTO dbo.chat_messages (id, senderId, senderName, senderRole, targetUserId, message, [timestamp], isRead)
         VALUES (@id, @senderId, @senderName, @senderRole, @targetUserId, @message, SYSUTCDATETIME(), 0)
       `);
+
+    const io = req.app.get('io');
+    const msgPayload = {
+      id,
+      senderId: req.user.userId,
+      senderName,
+      senderRole: isAdmin ? 'admin' : 'customer',
+      targetUserId: isAdmin ? targetUserId : null,
+      message: messageText,
+      timestamp,
+      isRead: false,
+    };
+
+    if (io) {
+      if (isAdmin) {
+        io.to(`user:${targetUserId}`).emit('new_message', msgPayload);
+        io.to('admin').emit('new_message', msgPayload);
+      } else {
+        io.to('admin').emit('new_message', msgPayload);
+        io.to(`user:${req.user.userId}`).emit('new_message', msgPayload);
+      }
+    }
 
     return res.status(201).json({ id, message: 'Message sent' });
   } catch (error) {
