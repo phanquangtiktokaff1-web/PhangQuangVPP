@@ -22,15 +22,15 @@ export function Footer() {
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
-                <span>1900 1234</span>
+                <span>000000000</span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                <span>support@vpshop.vn</span>
+                <span>quechoathanhhoa@gmail.com</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                <span>123 Nguyễn Huệ, Q.1, TP.HCM</span>
+                <span>Thanh Hóa</span>
               </div>
             </div>
           </div>
@@ -39,11 +39,11 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-white mb-4">Về QuangVPP</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Giới thiệu</Link></li>
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Tuyển dụng</Link></li>
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Chính sách bảo mật</Link></li>
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Điều khoản sử dụng</Link></li>
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Liên hệ</Link></li>
+              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Đẹp trai</Link></li>
+              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Nhà giàu</Link></li>
+              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Sống vội</Link></li>
+              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Hạnh phúc</Link></li>
+              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Lịch sự</Link></li>
             </ul>
           </div>
 
@@ -51,11 +51,11 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-white mb-4">Hỗ trợ khách hàng</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Hướng dẫn mua hàng</Link></li>
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Chính sách đổi trả</Link></li>
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Chính sách vận chuyển</Link></li>
-              <li><Link to="/" className="hover:text-white transition-colors text-gray-300">Phương thức thanh toán</Link></li>
-              <li><Link to="/wholesale" className="hover:text-white transition-colors text-gray-300">Mua hàng sỉ</Link></li>
+              <li><Link to="#" className="hover:text-white transition-colors text-gray-300">Hướng dẫn mua hàng</Link></li>
+              <li><Link to="#" className="hover:text-white transition-colors text-gray-300">Chính sách đổi trả</Link></li>
+              <li><Link to="#" className="hover:text-white transition-colors text-gray-300">Chính sách vận chuyển</Link></li>
+              <li><Link to="#" className="hover:text-white transition-colors text-gray-300">Phương thức thanh toán</Link></li>
+              <li><Link to="#" className="hover:text-white transition-colors text-gray-300">Mua hàng sỉ</Link></li>
             </ul>
           </div>
 
@@ -63,7 +63,7 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-white mb-4">Thanh toán</h3>
             <div className="flex flex-wrap gap-2 mb-6">
-              {[{label:'COD',color:'text-gray-800'},{label:'VNPay',color:'text-gray-800'},{label:'MoMo',color:'text-pink-600'},{label:'ZaloPay',color:'text-blue-600'},{label:'Bank',color:'text-gray-800'}].map(p => (
+              {[{label:'COD',color:'text-gray-800'},{label:'VNPay',color:'text-gray-800'}].map(p => (
                 <div key={p.label} className={`bg-white rounded-md px-3 py-1.5 text-xs font-bold ${p.color} shadow-sm border border-gray-100`}>{p.label}</div>
               ))}
             </div>
@@ -83,7 +83,7 @@ export function Footer() {
 
       <div className="border-t border-gray-800">
         <div className="container mx-auto px-4 py-4 text-center text-sm text-gray-500">
-        © 2025 QuangVPP. Tất cả quyền được bảo lưu.
+        © 2026 Phan Mậu Quang. Tất cả quyền được bảo lưu.
         </div>
       </div>
     </footer>
