@@ -10,7 +10,22 @@ const router = express.Router();
 router.get('/categories', async (_req, res, next) => {
   try {
     const pool = await getPool();
-    const result = await pool.request().query('SELECT * FROM dbo.categories ORDER BY name');
+    const result = await pool.request().query(`
+      SELECT
+        c.id,
+        c.name,
+        c.slug,
+        c.icon,
+        c.description,
+        c.image,
+        (
+          SELECT COUNT(1)
+          FROM dbo.products p
+          WHERE p.categoryId = c.id AND p.[status] = 'active'
+        ) AS productCount
+      FROM dbo.categories c
+      ORDER BY c.name
+    `);
     return res.json(result.recordset);
   } catch (error) {
     return next(error);
@@ -109,7 +124,18 @@ router.delete('/brands/:id', authMiddleware, adminMiddleware, async (req, res, n
 
 router.get('/products', async (req, res, next) => {
   try {
-    const { categoryId, brandId, q, sortBy = 'popular', isFlashSale, status } = req.query;
+    const {
+      categoryId,
+      categorySlug,
+      brandId,
+      q,
+      sortBy = 'popular',
+      isFlashSale,
+      status,
+      minPrice,
+      maxPrice,
+      limit,
+    } = req.query;
     const pool = await getPool();
     const request = pool.request();
 
@@ -122,9 +148,27 @@ router.get('/products', async (req, res, next) => {
       request.input('brandId', sql.NVarChar, String(brandId));
       conditions.push('brandId = @brandId');
     }
+    if (categorySlug) {
+      request.input('categorySlug', sql.NVarChar, String(categorySlug));
+      conditions.push('categoryId IN (SELECT id FROM dbo.categories WHERE slug = @categorySlug)');
+    }
     if (q) {
       request.input('q', sql.NVarChar, `%${String(q)}%`);
       conditions.push('(name LIKE @q OR sku LIKE @q OR tags LIKE @q)');
+    }
+    if (minPrice != null && minPrice !== '') {
+      const parsedMin = Number(minPrice);
+      if (Number.isFinite(parsedMin)) {
+        request.input('minPrice', sql.Decimal(18, 2), parsedMin);
+        conditions.push('price >= @minPrice');
+      }
+    }
+    if (maxPrice != null && maxPrice !== '') {
+      const parsedMax = Number(maxPrice);
+      if (Number.isFinite(parsedMax)) {
+        request.input('maxPrice', sql.Decimal(18, 2), parsedMax);
+        conditions.push('price <= @maxPrice');
+      }
     }
     if (isFlashSale === 'true') {
       conditions.push('isFlashSale = 1');
@@ -148,7 +192,13 @@ router.get('/products', async (req, res, next) => {
     if (sortBy === 'newest') orderBy = 'createdAt DESC';
     if (sortBy === 'rating') orderBy = 'rating DESC';
 
-    const result = await request.query(`SELECT * FROM dbo.products ${whereClause} ORDER BY ${orderBy}`);
+    const parsedLimit = Number(limit);
+    if (Number.isFinite(parsedLimit) && parsedLimit > 0) {
+      request.input('limit', sql.Int, parsedLimit);
+    }
+
+    const topClause = Number.isFinite(parsedLimit) && parsedLimit > 0 ? 'TOP (@limit)' : '';
+    const result = await request.query(`SELECT ${topClause} * FROM dbo.products ${whereClause} ORDER BY ${orderBy}`);
     return res.json(result.recordset.map(mapProductRow));
   } catch (error) {
     return next(error);

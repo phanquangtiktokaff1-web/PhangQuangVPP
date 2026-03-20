@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { SlidersHorizontal, Grid3X3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -35,7 +36,8 @@ export function CategoryPage() {
   }, [slug]);
 
   const [sortBy, setSortBy] = useState('popular');
-  const [priceRange, setPriceRange] = useState([0, 500000]);
+  const [priceBounds, setPriceBounds] = useState<[number, number]>([0, 1000000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000000]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -44,6 +46,20 @@ export function CategoryPage() {
     const colors = new Set<string>();
     products.forEach(p => p.colors.forEach(c => colors.add(c)));
     return Array.from(colors);
+  }, [products]);
+
+  useEffect(() => {
+    if (products.length === 0) {
+      setPriceBounds([0, 1000000]);
+      setPriceRange([0, 1000000]);
+      return;
+    }
+
+    const prices = products.map(p => p.price).filter(v => Number.isFinite(v));
+    const min = Math.floor(Math.min(...prices));
+    const max = Math.ceil(Math.max(...prices));
+    setPriceBounds([min, max]);
+    setPriceRange([min, max]);
   }, [products]);
 
   const filteredProducts = useMemo(() => {
@@ -80,10 +96,44 @@ export function CategoryPage() {
     <div className="space-y-6">
       <div>
         <h3 className="font-semibold mb-3">Khoảng giá</h3>
-        <Slider value={priceRange} onValueChange={setPriceRange} max={500000} step={10000} className="mb-2" />
+        <Slider
+          value={priceRange}
+          onValueChange={(value) => setPriceRange([value[0] ?? priceBounds[0], value[1] ?? priceBounds[1]])}
+          min={priceBounds[0]}
+          max={priceBounds[1]}
+          step={1000}
+          className="mb-3"
+          disabled={priceBounds[0] === priceBounds[1]}
+        />
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>{formatPrice(priceRange[0])}</span>
           <span>{formatPrice(priceRange[1])}</span>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={priceBounds[0]}
+            max={priceRange[1]}
+            value={priceRange[0]}
+            onChange={(e) => {
+              const nextMin = Number(e.target.value);
+              if (!Number.isFinite(nextMin)) return;
+              setPriceRange([Math.max(priceBounds[0], Math.min(nextMin, priceRange[1])), priceRange[1]]);
+            }}
+          />
+          <Input
+            type="number"
+            inputMode="numeric"
+            min={priceRange[0]}
+            max={priceBounds[1]}
+            value={priceRange[1]}
+            onChange={(e) => {
+              const nextMax = Number(e.target.value);
+              if (!Number.isFinite(nextMax)) return;
+              setPriceRange([priceRange[0], Math.min(priceBounds[1], Math.max(nextMax, priceRange[0]))]);
+            }}
+          />
         </div>
       </div>
 
@@ -114,10 +164,10 @@ export function CategoryPage() {
         </div>
       </div>
 
-      {(selectedBrands.length > 0 || selectedColors.length > 0 || priceRange[0] > 0 || priceRange[1] < 500000) && (
+      {(selectedBrands.length > 0 || selectedColors.length > 0 || priceRange[0] > priceBounds[0] || priceRange[1] < priceBounds[1]) && (
         <>
           <Separator />
-          <Button variant="outline" className="w-full" onClick={() => { setSelectedBrands([]); setSelectedColors([]); setPriceRange([0, 500000]); }}>
+          <Button variant="outline" className="w-full" onClick={() => { setSelectedBrands([]); setSelectedColors([]); setPriceRange([priceBounds[0], priceBounds[1]]); }}>
             Xóa bộ lọc
           </Button>
         </>
