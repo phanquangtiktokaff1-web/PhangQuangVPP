@@ -100,24 +100,6 @@ export function WholesalePage() {
       </section>
 
       <div className="container mx-auto px-4 py-10">
-        {/* Benefits */}
-        <div className="grid md:grid-cols-4 gap-4 mb-10">
-          {[
-            { icon: <BadgePercent className="h-8 w-8 text-primary mx-auto" />, title: 'Giảm đến 40%', desc: 'So với giá lẻ' },
-            { icon: <Truck className="h-8 w-8 text-primary mx-auto" />, title: 'Miễn phí vận chuyển', desc: 'Đơn từ 1 triệu' },
-            { icon: <FileText className="h-8 w-8 text-primary mx-auto" />, title: 'Xuất hóa đơn VAT', desc: 'Đầy đủ chứng từ' },
-            { icon: <Sparkles className="h-8 w-8 text-primary mx-auto" />, title: 'In logo miễn phí', desc: 'Từ 100 sản phẩm' },
-          ].map((item, i) => (
-            <Card key={i}>
-              <CardContent className="p-4 text-center">
-                <div className="mb-2 flex justify-center">{item.icon}</div>
-                <div className="font-semibold">{item.title}</div>
-                <div className="text-sm text-muted-foreground">{item.desc}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Price table */}
           <div>

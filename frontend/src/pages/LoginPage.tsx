@@ -30,8 +30,8 @@ export function LoginPage() {
     setLoading(false);
     if (success) {
       toast.success('Đăng nhập thành công!');
-      // Check if admin
-      if (email === 'admin@vpshop.vn') {
+      const loggedInUser = useAuthStore.getState().user;
+      if (loggedInUser?.role === 'admin' || loggedInUser?.role === 'staff') {
         navigate('/admin');
       } else {
         navigate(redirect || '/');
