@@ -150,13 +150,6 @@ export function LoginPage() {
               Đăng ký ngay
             </Link>
           </div>
-
-          {/* Demo accounts */}
-          <div className="mt-4 p-3 bg-secondary rounded-md text-xs">
-            <p className="font-semibold text-secondary-foreground mb-1">Tài khoản demo:</p>
-            <p className="text-primary">Admin: admin@vpshop.vn / 123456</p>
-            <p className="text-primary">Khách: nguyenvana@gmail.com / 123456</p>
-          </div>
         </CardContent>
       </Card>
     </div>
