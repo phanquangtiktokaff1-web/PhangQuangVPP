@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { MapPin, CreditCard, Truck, FileText, CheckCircle, Banknote, Building, Smartphone, ShieldCheck } from 'lucide-react';
+import { MapPin, CreditCard, Truck, FileText, CheckCircle, Banknote, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -72,6 +72,17 @@ export function CheckoutPage() {
         total: getTotal(),
       };
       const result = await orderApi.createOrder(orderData);
+
+      if (paymentMethod === 'vnpay') {
+        if (!result.paymentUrl) {
+          toast.error('Không tạo được URL thanh toán VNPay. Vui lòng thử lại.');
+          return;
+        }
+        toast.success('Đang chuyển sang cổng thanh toán VNPay...');
+        window.location.assign(result.paymentUrl);
+        return;
+      }
+
       setOrderId(result.id || `ORD-${Date.now().toString().slice(-6)}`);
       setOrderPlaced(true);
       clearCart();
@@ -236,9 +247,6 @@ export function CheckoutPage() {
                 <div className="space-y-3">
                   {[
                     { value: 'cod', label: 'Thanh toán khi nhận hàng (COD)', icon: <Banknote className="h-5 w-5 text-gray-500" /> },
-                    { value: 'bank_transfer', label: 'Chuyển khoản ngân hàng', icon: <Building className="h-5 w-5 text-blue-500" /> },
-                    { value: 'momo', label: 'Ví MoMo', icon: <Smartphone className="h-5 w-5 text-pink-500" /> },
-                    { value: 'zalopay', label: 'ZaloPay', icon: <CreditCard className="h-5 w-5 text-blue-600" /> },
                     { value: 'vnpay', label: 'VNPay', icon: <ShieldCheck className="h-5 w-5 text-red-500" /> },
                   ].map(method => (
                     <label key={method.value} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-accent ${paymentMethod === method.value ? 'border-primary bg-primary/5' : ''}`}>

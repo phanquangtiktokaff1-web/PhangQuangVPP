@@ -25,7 +25,7 @@ export interface Product {
   wholesalePrice?: WholesalePrice[];
   status: 'active' | 'inactive'; createdAt: string;
 }
-export type PaymentMethod = 'cod' | 'bank_transfer' | 'momo' | 'zalopay' | 'vnpay';
+export type PaymentMethod = 'cod' | 'vnpay';
 export type ShippingMethod = 'standard' | 'express' | 'same_day';
 export interface CartItem { lineItemId?: string; productId: string; quantity: number; price?: number; product?: Product; customization?: { type: string; text: string } }
 export interface Address { id: string; name: string; phone: string; street: string; ward?: string; district?: string; city: string; isDefault: boolean; }
@@ -83,7 +83,7 @@ export const catalogApi = {
 
 export const orderApi = {
   getMyOrders: () => api.get<Order[]>('/orders/my-orders').then(r => r.data),
-  createOrder: (data: unknown) => api.post<{id:string}>('/orders', data).then(r => r.data),
+  createOrder: (data: unknown) => api.post<{id:string; paymentUrl?: string; paymentMethod?: string; paymentStatus?: string}>('/orders', data).then(r => r.data),
   cancelOrder: (id: string) => api.post(`/orders/${id}/cancel`),
   returnRequest: (id: string, reason: string) => api.post(`/orders/${id}/return-request`, { reason }),
   // Admin

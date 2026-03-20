@@ -23,6 +23,7 @@ import { WishlistPage } from '@/pages/WishlistPage';
 import { ComparePage } from '@/pages/ComparePage';
 import { CustomizePage } from '@/pages/CustomizePage';
 import { WholesalePage } from '@/pages/WholesalePage';
+import { PaymentVNPayReturnPage } from '@/pages/PaymentVNPayReturnPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 // Admin Pages
@@ -71,6 +72,7 @@ function App() {
               <Route path="/compare" element={<ComparePage />} />
               <Route path="/customize" element={<CustomizePage />} />
               <Route path="/wholesale" element={<WholesalePage />} />
+              <Route path="/payment/vnpay-return" element={<PaymentVNPayReturnPage />} />
             </Route>
 
             {/* Admin pages with guard + layout */}

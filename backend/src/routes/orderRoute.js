@@ -2,8 +2,116 @@ const express = require('express');
 const { getPool, sql } = require('../libs/db');
 const { authMiddleware, adminMiddleware } = require('../middlewares/authMiddleware');
 const { safeJsonParse } = require('../utils/mapRows');
+const { VNPay, ignoreLogger } = require('vnpay');
 
 const router = express.Router();
+
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'http://localhost:5173';
+const VNPAY_RETURN_URL = process.env.VNPAY_RETURN_URL || 'http://localhost:5000/api/orders/vnpay-return';
+
+function resolveVNPayHost() {
+  const raw = process.env.VNPAY_HOST || process.env.VNPAY_URL || 'https://sandbox.vnpayment.vn';
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return 'https://sandbox.vnpayment.vn';
+  }
+}
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.length > 0) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip?.replace('::ffff:', '') || '127.0.0.1';
+}
+
+function buildFrontendReturnUrl(params = {}) {
+  const url = new URL('/orders', FRONTEND_BASE_URL);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  });
+  return url.toString();
+}
+
+function getVNPayGateway() {
+  const tmnCode = process.env.VNPAY_TMN_CODE;
+  const secureSecret = process.env.VNPAY_SECURE_SECRET || process.env.VNPAY_HASH_SECRET;
+
+  if (!tmnCode || !secureSecret) return null;
+
+  return new VNPay({
+    tmnCode,
+    secureSecret,
+    vnpayHost: resolveVNPayHost(),
+    testMode: String(process.env.VNPAY_TEST_MODE || 'true') === 'true',
+    hashAlgorithm: 'SHA512',
+    enableLog: false,
+    loggerFn: ignoreLogger,
+  });
+}
+
+async function processVNPayReturnQuery(query) {
+  const vnpay = getVNPayGateway();
+  if (!vnpay) {
+    return { ok: false, reason: 'gateway_not_configured' };
+  }
+
+  const verify = vnpay.verifyReturnUrl(query);
+  if (!verify.isVerified) {
+    return { ok: false, reason: 'invalid_signature' };
+  }
+
+  const orderId = String(verify.vnp_TxnRef || '');
+  if (!orderId) {
+    return { ok: false, reason: 'missing_order_id' };
+  }
+
+  const isPaid = verify.isSuccess && String(verify.vnp_ResponseCode) === '00';
+  const pool = await getPool();
+  const orderResult = await pool.request()
+    .input('id', sql.NVarChar, orderId)
+    .query('SELECT TOP 1 id, paymentStatus, voucherCode FROM dbo.orders WHERE id = @id');
+
+  const order = orderResult.recordset[0];
+  if (!order) {
+    return { ok: false, reason: 'order_not_found', orderId };
+  }
+
+  if (isPaid) {
+    await pool.request()
+      .input('id', sql.NVarChar, orderId)
+      .query("UPDATE dbo.orders SET paymentStatus = 'paid', [status] = CASE WHEN [status] = 'pending' THEN 'confirmed' ELSE [status] END WHERE id = @id");
+
+    await pool.request()
+      .input('orderId', sql.NVarChar, orderId)
+      .input('status', sql.NVarChar, 'confirmed')
+      .input('note', sql.NVarChar, 'Thanh toán VNPay thành công')
+      .query("IF NOT EXISTS (SELECT 1 FROM dbo.order_timeline WHERE orderId = @orderId AND [status] = @status) INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, @status, SYSUTCDATETIME(), @note)");
+
+    if (order.voucherCode && order.paymentStatus !== 'paid') {
+      await pool.request()
+        .input('code', sql.NVarChar, String(order.voucherCode).toUpperCase())
+        .query('UPDATE dbo.vouchers SET usedCount = usedCount + 1 WHERE code = @code');
+    }
+
+    return { ok: true, orderId, code: String(verify.vnp_ResponseCode || '00') };
+  }
+
+  await pool.request()
+    .input('id', sql.NVarChar, orderId)
+    .query("UPDATE dbo.orders SET paymentStatus = 'failed', [status] = 'cancelled' WHERE id = @id");
+
+  await pool.request()
+    .input('orderId', sql.NVarChar, orderId)
+    .input('status', sql.NVarChar, 'cancelled')
+    .input('note', sql.NVarChar, `Thanh toán VNPay thất bại: ${verify.message || 'unknown'}`)
+    .query("INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, @status, SYSUTCDATETIME(), @note)");
+
+  return { ok: false, orderId, reason: 'payment_failed', code: String(verify.vnp_ResponseCode || ''), message: verify.message };
+}
 
 async function buildOrders(pool, userId) {
   const ordersResult = await pool.request()
@@ -107,6 +215,11 @@ router.post('/', authMiddleware, async (req, res, next) => {
       paymentMethod, shippingMethod, shippingAddress, voucherCode, note,
     } = req.body;
 
+    const normalizedPaymentMethod = paymentMethod || 'cod';
+    if (!['cod', 'vnpay'].includes(normalizedPaymentMethod)) {
+      return res.status(400).json({ message: 'Chỉ hỗ trợ thanh toán COD hoặc VNPay' });
+    }
+
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Order items are required' });
     }
@@ -122,7 +235,7 @@ router.post('/', authMiddleware, async (req, res, next) => {
       .input('discount', sql.Decimal(18, 2), discount || 0)
       .input('total', sql.Decimal(18, 2), total || 0)
       .input('status', sql.NVarChar, 'pending')
-      .input('paymentMethod', sql.NVarChar, paymentMethod || 'cod')
+      .input('paymentMethod', sql.NVarChar, normalizedPaymentMethod)
       .input('paymentStatus', sql.NVarChar, 'pending')
       .input('shippingMethod', sql.NVarChar, shippingMethod || 'standard')
       .input('shippingAddress', sql.NVarChar(sql.MAX), JSON.stringify(shippingAddress || {}))
@@ -183,14 +296,65 @@ router.post('/', authMiddleware, async (req, res, next) => {
       .input('orderId', sql.NVarChar, orderId)
       .query("INSERT INTO dbo.order_timeline (orderId, status, date, note) VALUES (@orderId, 'pending', SYSUTCDATETIME(), NULL)");
 
-    // Mark voucher used
-    if (voucherCode) {
+    // Mark voucher used immediately for COD only.
+    if (voucherCode && normalizedPaymentMethod === 'cod') {
       await pool.request()
         .input('code', sql.NVarChar, voucherCode.toUpperCase())
         .query('UPDATE dbo.vouchers SET usedCount = usedCount + 1 WHERE code = @code');
     }
 
+    if (normalizedPaymentMethod === 'vnpay') {
+      const vnpay = getVNPayGateway();
+      if (!vnpay) {
+        return res.status(500).json({ message: 'VNPay chưa được cấu hình trên server' });
+      }
+
+      const payableAmount = Math.round(Number(total || 0));
+      if (!Number.isFinite(payableAmount) || payableAmount <= 0) {
+        return res.status(400).json({ message: 'Số tiền thanh toán không hợp lệ' });
+      }
+
+      const paymentUrl = vnpay.buildPaymentUrl({
+        vnp_Amount: payableAmount,
+        vnp_IpAddr: getClientIp(req),
+        vnp_ReturnUrl: VNPAY_RETURN_URL,
+        vnp_TxnRef: orderId,
+        vnp_OrderInfo: `Thanh toan don hang ${orderId}`,
+      });
+
+      return res.status(201).json({
+        id: orderId,
+        paymentMethod: normalizedPaymentMethod,
+        paymentStatus: 'pending',
+        paymentUrl,
+      });
+    }
+
     return res.status(201).json({ id: orderId, message: 'Order created successfully' });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/vnpay-return', async (req, res, next) => {
+  try {
+    const result = await processVNPayReturnQuery(req.query);
+    if (result.ok) {
+      return res.redirect(buildFrontendReturnUrl({ payment: 'vnpay_success', orderId: result.orderId }));
+    }
+    return res.redirect(buildFrontendReturnUrl({ payment: 'vnpay_failed', orderId: result.orderId, reason: result.reason, code: result.code }));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.get('/vnpay-verify', async (req, res, next) => {
+  try {
+    const result = await processVNPayReturnQuery(req.query);
+    if (result.ok) {
+      return res.json({ success: true, orderId: result.orderId, code: result.code });
+    }
+    return res.status(400).json({ success: false, orderId: result.orderId, reason: result.reason, code: result.code, message: result.message });
   } catch (error) {
     return next(error);
   }
